@@ -1,68 +1,105 @@
 """
-hooks_custom_chatcommands
+hooks_custom_topstats
 
 A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
-that displays inner data on chat commands
-(some strings are hardcoded in french, feel free to adapt them to your language)
+that displays and rewards top players, based on their scores.
 
-by https://github.com/ElGuillermo
+Source : https://github.com/ElGuillermo
 
 Feel free to use/modify/distribute, as long as you keep this note in your code
 """
 
-from datetime import datetime
-import logging
-
-from sqlalchemy.sql import text  # type: ignore
-
-from rcon.models import enter_session
-from rcon.player_history import get_player_profile
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from rcon.rcon import Rcon, StructuredLogLineWithMetaData
 
 
 # Configuration (you must review/change these !)
 # -----------------------------------------------------------------------------
 
-# Strings translations
+# Translations
 # Available : 0 for english, 1 for french, 2 for german
 LANG = 0
 
+# Gives a bonus to defense
+# ie : 1.4 means "defense counts 1.4x more than offense"
+OFFENSEDEFENSE_RATIO = 1.4
+# Gives a bonus to support
+COMBATSUPPORT_RATIO = 1.4
+
+
+# Calling from chat
+# ----------------------------------------
+
+# Chat command
+CHAT_COMMAND = "!top"
+
+# How many tops in each category should we display ?
+# Prefer 1-3 for a shorter message
+TOPS_CHAT = 3
+
+# Squads : display squad members for the nth top squads
+# Prefer 0 for a shorter message
+TOPS_CHAT_DETAIL_SQUADS = 1
+
+
+# Displayed at MATCH END
+# ----------------------------------------
+
+# How many tops in each category should we display ?
+# Prefer 1-3 for a shorter message
+TOPS_MATCHEND = 3
+
+# Squads : display squad members for the nth top squads
+# Prefer 0 for a shorter message
+TOPS_MATCHEND_DETAIL_SQUADS = 1
+
+# Give VIPs at match's end to the best nth top in each :
+# - commander (best combat + (support * COMBATSUPPORT_RATIO))
+# - infantry (best offense * (defense * OFFENSEDEFENSE_RATIO))
+# - infantry (best combat + (support * COMBATSUPPORT_RATIO))
+# ie :
+# 1 = gives a VIP to the top #1 players (3 VIPs awarded)
+# 2 = gives a VIP to the top #1 and #2 players (6 VIPs awarded)
+# 0 to disable
+VIP_WINNERS = 1
+
+# VIPs will be given if there is at least this number of players ingame
+# 0 to disable (VIP will always be given)
+# Recommended : the same number as your seed limit
+SEED_LIMIT = 40
+
+# How many VIP hours awarded ?
+# If the player already has a VIP that ends AFTER this delay, VIP won't be given.
+VIP_HOURS = 24
+
+# VIP announce : local time
+# Find you local timezone : https://utctime.info/timezone/
+LOCAL_TIMEZONE = "Europe/Paris"
+LOCAL_TIME_FORMAT = "%d/%m/%Y à %Hh%M"
+
 
 # Translations
-# format is : "key": ["english", "french", "german"]
+# "key" : ["english", "french", "german"]
 # ----------------------------------------------
 
 TRANSL = {
-    # Units
-    "years": ["years", "années", "Jahre"],
-    "monthes": ["monthes", "mois", "Monate"],
-    "weeks": ["weeks", "semaines", "Wochen"],
-    "days": ["days", "jours", "Tage"],
-    "hours": ["hours", "heures", "Dienststunden"],
-    "minutes": ["minutes", "minutes", "Minuten"],
-    "seconds": ["seconds", "secondes", "Sekunden"],
-    # !r
-    "redeploy": ["redeploy", "redéploiement", "Umschichtung"],
-    # !me
-    "nopunish": ["None ! Well done !", "Aucune ! Félicitations !", "Keiner! Gut gemacht!"],
-    "firsttimehere": ["first time here", "tu es venu(e) il y a", "zum ersten Mal hier"],
-    "gamesessions": ["game sessions", "sessions de jeu", "Spielesitzungen"],
-    "playedgames": ["played games", "parties jouées", "gespielte Spiele"],
-    "cumulatedplaytime": ["cumulated play time", "temps de jeu cumulé", "kumulierte Spielzeit"],
-    "averagesession": ["average session", "session moyenne", "Durchschnittliche Sitzung"],
-    "punishments": ["punishments", "punitions", "Strafen"],
-    "averages": ["averages", "moyennes", "Durchschnittswerte"],
-    "favoriteweapons": ["favorite weapons", "armes favorites", "Lieblingswaffen"],
-    "victims": ["victims", "victimes", "Opfer"],
-    "nemesis": ["nemesis", "nemesis", "Nemesis"],
-    "combat": ["combat", "combat", "kampf"],
+    "nostatsyet": ["No stats yet", "Pas de stats", "noch keine Statistiken"],
+    "allies": ["all", "all", "all"],
+    "axis": ["axe", "axe", "axe"],
+    "best_players": ["Best players", "Meilleurs joueurs", "Beste Spieler"],
+    "armycommander": ["Commander", "Commandant", "Kommandant"],
+    "infantry": ["Infantry", "Infanterie", "Infanterie"],
+    "tankers": ["Tankers", "Tankistes", "Panzerspieler"],
+    "best_squads": ["Best squads", "Meilleures squads", "Beste Mannschaften"],
     "offense": ["attack", "attaque", "angriff"],
     "defense": ["defense", "défense", "verteidigung"],
+    "combat": ["combat", "combat", "kampf"],
     "support": ["support", "soutien", "unterstützung"],
-    "totals": ["totals", "totaux", "Gesamtsummen"],
-    "kills": ["kills", "kills", "tötet"],
-    "deaths": ["deaths", "morts", "todesfälle"],
     "ratio": ["ratio", "ratio", "verhältnis"],
+    "killrate": ["kills/min", "kills/min", "kills/min"],
+    "vip_until": ["VIP until", "VIP jusqu'au", "VIP bis"],
+    "already_vip": ["Already VIP !", "Déjà VIP !", "bereits VIP !"]
 }
 
 
@@ -70,56 +107,340 @@ TRANSL = {
 # -----------------------------------------------------------------------------
 
 
-def readable_duration(seconds: int) -> str:
+def is_vip_for_less_than_xh(rcon: Rcon, player_id: str, vip_delay_hours: int):
     """
-    Returns a human readable string from a number of seconds
+    returns 'true' if player has no VIP or a VIP that expires in less than vip_delay_hours,
+    'false' if he has a VIP that expires in more than vip_delay_hours or no VIP at all.
     """
-    years, lessthanayearseconds =  divmod(seconds, 31536000)
-    monthes, lessthanamonthseconds = divmod(lessthanayearseconds, 18446400)
-    weeks, lessthanaweekseconds =  divmod(lessthanamonthseconds, 604800)
-    days, lessthanadayseconds =  divmod(lessthanaweekseconds, 86400)
-    hours, lessthananhourseconds = divmod(lessthanadayseconds, 3600)
-    minutes, seconds = divmod(lessthananhourseconds, 60)
+    actual_vips = rcon.get_vip_ids()
+    for item in actual_vips:
+        if item['player_id'] == player_id and item['vip_expiration'] is not None:
+            vip_expiration_output = str(item['vip_expiration'])
+            vip_expiration = datetime.fromisoformat(vip_expiration_output)
+            if vip_expiration < datetime.now(timezone.utc) + timedelta(hours=vip_delay_hours):
+                return True
+            return False
+    return True  # player wasn't in the actual VIP list
 
-    time_string = []
-    if years > 0:
-        time_string.append(f"{int(years)} {TRANSL['years'][LANG]}")
-    if monthes > 0:
-        if years > 0:
-            time_string.append(", ")
-        time_string.append(f"{int(monthes)} {TRANSL['monthes'][LANG]}")
-    if weeks > 0:
-        if years > 0 or monthes > 0:
-            time_string.append(", ")
-        time_string.append(f"{int(weeks)} {TRANSL['weeks'][LANG]}")
-    if days > 0:
-        # if years > 0 or monthes > 0 or weeks > 0:
-        #     time_string.append(",\n")
-        time_string.append(f"{int(days)} {TRANSL['days'][LANG]}")
-    # if years > 0 or monthes > 0 or weeks > 0 or days > 0:
-    #     time_string.append(",")
-    if hours > 0:
-        time_string.append(f"{int(hours)}h")
-    else:
-        time_string.append("0h")
-    if minutes > 0:
-        time_string.append(f"{int(minutes)}m")
-    else:
-        time_string.append("00m")
-    if seconds > 0:
-        time_string.append(f"{int(seconds)}s")
-    else:
-        time_string.append("00s")
 
-    return ' '.join(time_string)
+def get_top(
+    rcon: Rcon,
+    callmode: str,  # either "chat" or "matchend"
+    calltype: str,  # either "player" or "squad"
+    data_bucket: list,
+    sortkey,
+    first_data: str,
+    second_data: str,
+    third_data: str,
+    fourth_data: str,
+    squadtype_allplayers : list  # Observed squad type ("infantry" or "tankers") players sats
+) -> str:
+    """
+    Returns a string, listing top players or squads, as calculated by sortkey
+    ie :
+    SomeGuy (Axe) : 240 ; 120
+    SomeOtherGuy (All) : 230 ; 100
+    """
+    if callmode == "chat":
+        tops_limit = TOPS_CHAT
+        show_members = TOPS_CHAT_DETAIL_SQUADS
+    if callmode == "matchend":
+        server_status = rcon.get_status()  # Get the number of players -> give VIP if not in seed
+        tops_limit = TOPS_MATCHEND
+        show_members = TOPS_MATCHEND_DETAIL_SQUADS
 
-def chat_commands(
+    sorted_data = sorted(data_bucket, key=sortkey, reverse=True)
+    output = ""
+    iteration = 1
+    for sample in sorted_data[:tops_limit]:
+        if sortkey(sample) != 0:
+            if fourth_data == "":  # real_offdef, teamplay, ratio
+                if calltype == "squad":  # real_offdef, teamplay
+                    output = output + "■ "
+                output = output + f"{sample[first_data]} ({TRANSL[sample['team']][LANG]}): {sample[second_data]} ; {sample[third_data]}\n"
+            else:  # killrate (players only)
+                output = output + f"{sample[first_data]} ({TRANSL[sample['team']][LANG]}): {sortkey(sample)}\n"
+
+            # Squad members
+            if (
+                calltype == "squad"
+                and show_members > 0
+                and iteration <= show_members
+            ):
+                for sample_vip in sorted_data[:show_members]:
+                    best_players_names = [
+                        data['name'] for data in squadtype_allplayers
+                        if data.get('team') == sample_vip['team']
+                        and data.get('unit_name') == sample_vip['name']
+                    ]
+                    best_players_str = '; '.join(best_players_names)
+                    output = output + f"{best_players_str}\n"
+
+        # Give VIP to players
+        if (
+            callmode == "matchend"
+            and calltype == "player"
+            and VIP_WINNERS > 0
+            and VIP_HOURS > 0  # Security : avoids to give a 0 hour VIP
+            and server_status["current_players"] >= SEED_LIMIT
+            and iteration <= VIP_WINNERS
+            and second_data != "kills"  # No VIP for top ratios and killrates
+        ):
+            if is_vip_for_less_than_xh(rcon, sample['player_id'], VIP_HOURS):
+                output = output + give_xh_vip(rcon, sample['player_id'], VIP_HOURS)
+            else:
+                output = output + f"{TRANSL['already_vip'][LANG]}\n"
+
+        iteration = iteration + 1
+
+    return output
+
+
+def give_xh_vip(rcon: Rcon, player_id: str, hours_awarded: int):
+    """
+        Gives a x hours VIP
+        Returns a str that announces the VIP expiration (local) time
+    """
+    # Gives X hours VIP
+    now_plus_xh = datetime.now(timezone.utc) + timedelta(hours=hours_awarded)
+    now_plus_xh_vip_formatted = now_plus_xh.strftime('%Y-%m-%dT%H:%M:%SZ')
+    rcon.add_vip(player_id, "top_player", now_plus_xh_vip_formatted)
+
+    # Returns a string giving the new expiration date in local time
+    now_plus_xh_utc = now_plus_xh.replace(tzinfo=ZoneInfo("UTC"))
+    now_plus_xh_paris_tz = now_plus_xh_utc.astimezone(ZoneInfo(LOCAL_TIMEZONE))
+    now_plus_xh_display_formatted = now_plus_xh_paris_tz.strftime(LOCAL_TIME_FORMAT)
+    return f"{TRANSL['vip_until'][LANG]} {str(now_plus_xh_display_formatted)} !\n"
+
+
+def message_all_players(rcon: Rcon, message: str):
+    """
+    Sends a message to all connected players
+    """
+    all_players_list = rcon.get_playerids()
+    for player in all_players_list:
+        player_name = player[0]
+        player_id = player[1]
+        try:
+            rcon.message_player(
+                player_name=player_name,
+                player_id=player_id,
+                message=message,
+                by="top_stats",
+            )
+        except Exception:
+            pass
+
+
+def ratio(obj):
+    """
+    returns (kills/deaths) score
+    """
+    kills = int(obj["kills"])
+    deaths = int(obj["deaths"])
+    if deaths == 0:
+        deaths = 1
+    computed_ratio = (kills / deaths)
+    return round(computed_ratio, 2)
+
+
+def real_offdef(obj):
+    """
+    returns a combined offense * (defense * OFFENSEDEFENSE_RATIO) score
+    """
+    offense = int(obj["offense"])
+    defense = int(obj["defense"])
+    return int(offense * (defense * OFFENSEDEFENSE_RATIO))
+
+
+def teamplay(obj):
+    """
+    returns a combined combat + (support * COMBATSUPPORT_RATIO) score
+    """
+    combat = int(obj["combat"])
+    support = int(obj["support"])
+    return int(combat + support * COMBATSUPPORT_RATIO)
+
+
+def killrate(obj):
+    """
+    returns kills/playtime in minutes
+    """
+    kills = int(obj["kills"])
+    offense = int(obj["offense"])
+    defense = int(obj["defense"])
+    if kills == 0:
+        return 0
+    if offense == 0 and defense == 0:
+        return 0
+    return round((kills / ((offense + defense) / 20)), 2)
+
+
+def team_view_stats(rcon: Rcon):
+    """
+    Get the get_team_view data
+    and gather the infos according to the squad types and soldier roles
+    """
+    get_team_view: dict = rcon.get_team_view()
+
+    all_commanders = []
+    all_players_infantry = []
+    all_players_armor = []
+    all_squads_infantry = []
+    all_squads_armor = []
+
+    for team in ["allies", "axis"]:
+
+        if team in get_team_view:
+
+            # Commanders
+            if get_team_view[team]["commander"] is not None:
+                all_commanders.append(get_team_view[team]["commander"])
+
+            for squad in get_team_view[team]["squads"]:
+
+                squad_data = get_team_view[team]["squads"][squad]
+                squad_data["team"] = team
+
+                # Infantry
+                if squad_data["type"] == "infantry" or squad_data["type"] == "recon":
+                    all_players_infantry.extend(squad_data["players"])
+                    squad_data.pop("players", None)
+                    all_squads_infantry.append({squad: squad_data})
+
+                # Armor
+                elif squad_data["type"] == "armor":
+                    all_players_armor.extend(squad_data["players"])
+                    squad_data.pop("players", None)
+                    all_squads_armor.append({squad: squad_data})
+
+    return (
+        all_commanders,
+        all_players_infantry,
+        all_players_armor,
+        all_squads_infantry,
+        all_squads_armor
+    )
+
+
+def stats_display(
+        top_commanders_teamplay: str,
+        top_infantry_offdef: str,
+        top_infantry_teamplay: str,
+        top_infantry_ratio: str,
+        top_infantry_killrate: str,
+        top_squads_infantry_offdef: str,
+        top_squads_infantry_teamplay: str,
+        top_squads_armor_offdef: str,
+        top_squads_armor_teamplay: str,
+) -> str:
+    """
+    Format the message sent
+    """
+    message = ""
+    # players
+    if (
+        len(top_commanders_teamplay) != 0
+        or len(top_infantry_offdef) != 0
+        or len(top_infantry_teamplay) != 0
+        or len(top_infantry_ratio) != 0
+        or len(top_infantry_killrate) != 0
+    ):
+        message = f"█ {TRANSL['best_players'][LANG]} █\n\n"
+        # players / commanders
+        if len(top_commanders_teamplay) != 0:
+            message += (
+                f"▓ {TRANSL['armycommander'][LANG]} ▓\n\n"
+                f"─ {TRANSL['combat'][LANG]} + ({TRANSL['support'][LANG]} * {str(COMBATSUPPORT_RATIO)}) ─\n{top_commanders_teamplay}\n"
+            )
+        # players / infantry
+        if (
+            len(top_infantry_offdef) != 0
+            or len(top_infantry_teamplay) != 0
+            or len(top_infantry_ratio) != 0
+            or len(top_infantry_killrate) != 0
+        ):
+            message += f"▓ {TRANSL['infantry'][LANG]} ▓\n\n"
+            if len(top_infantry_offdef) != 0:
+                message += f"─ {TRANSL['offense'][LANG]} * ({TRANSL['defense'][LANG]} * {str(OFFENSEDEFENSE_RATIO)}) ─\n{top_infantry_offdef}\n"
+            if len(top_infantry_teamplay) != 0:
+                message += f"─ {TRANSL['combat'][LANG]} + ({TRANSL['support'][LANG]} * {str(COMBATSUPPORT_RATIO)}) ─\n{top_infantry_teamplay}\n"
+            if len(top_infantry_ratio) != 0:
+                message += f"─ {TRANSL['ratio'][LANG]} ─\n{top_infantry_ratio}\n"
+            if len(top_infantry_killrate) != 0:
+                message += f"─ {TRANSL['killrate'][LANG]} ─\n{top_infantry_killrate}\n"
+    # squads
+    if (
+        len(top_squads_infantry_offdef) != 0
+        or len(top_squads_infantry_teamplay) != 0
+        or len(top_squads_armor_offdef) != 0
+        or len(top_squads_armor_teamplay) != 0
+    ):
+        message += f"\n█ {TRANSL['best_squads'][LANG]} █\n\n"
+        # squads / infantry
+        if len(top_squads_infantry_offdef) != 0 or len(top_squads_infantry_teamplay) != 0:
+            message += f"▓ {TRANSL['infantry'][LANG]} ▓\n\n"
+            if len(top_squads_infantry_offdef) != 0:
+                message += f"─ {TRANSL['offense'][LANG]} * ({TRANSL['defense'][LANG]} * {str(OFFENSEDEFENSE_RATIO)}) ─\n{top_squads_infantry_offdef}\n"
+            if len(top_squads_infantry_teamplay) != 0:
+                message += f"─ {TRANSL['combat'][LANG]} + ({TRANSL['support'][LANG]} * {str(COMBATSUPPORT_RATIO)}) ─\n{top_squads_infantry_teamplay}\n"
+        # squads / armor
+        if len(top_squads_armor_offdef) != 0 or len(top_squads_armor_teamplay) != 0:
+            message += f"▓ {TRANSL['tankers'][LANG]} ▓\n\n"
+            if len(top_squads_armor_offdef) != 0:
+                message += f"─ {TRANSL['offense'][LANG]} * ({TRANSL['defense'][LANG]} * {str(OFFENSEDEFENSE_RATIO)}) ─\n{top_squads_armor_offdef}\n"
+            if len(top_squads_armor_teamplay) != 0:
+                message += f"─ {TRANSL['combat'][LANG]} + ({TRANSL['support'][LANG]} * {str(COMBATSUPPORT_RATIO)}) ─\n{top_squads_armor_teamplay}\n"
+
+    # If no data yet
+    if len(message) == 0:
+        return f"{TRANSL['nostatsyet'][LANG]}"
+
+    return message
+
+
+def stats_gather(
+    rcon: Rcon,
+    callmode: str
+):
+    """
+    Calls team_view_stats() and gathers data in players categories
+    Then returns a tuple containing categories stats as calculated by get_top()
+    """
+    (
+        all_commanders,
+        all_players_infantry,
+        all_players_armor,
+        all_squads_infantry,
+        all_squads_armor
+    ) = team_view_stats(rcon)
+
+    all_squads_infantry = [{'name': key, **value} for item in all_squads_infantry for key, value in item.items()]
+    all_squads_armor = [{'name': key, **value} for item in all_squads_armor for key, value in item.items()]
+
+    return (
+        # Players (commanders)
+        get_top(rcon, callmode, "player", all_commanders, teamplay, "name", "combat", "support", "", all_commanders),
+        # Players (infantry)
+        get_top(rcon, callmode, "player", all_players_infantry, real_offdef, "name", "offense", "defense", "", all_players_infantry),
+        get_top(rcon, callmode, "player", all_players_infantry, teamplay, "name", "combat", "support", "", all_players_infantry),
+        get_top(rcon, callmode, "player", all_players_infantry, ratio, "name", "kills", "deaths", "", all_players_infantry),
+        get_top(rcon, callmode, "player", all_players_infantry, killrate, "name", "kills", "offense", "defense", all_players_infantry),
+        # Squads (infantry)
+        get_top(rcon, callmode, "squad", all_squads_infantry, real_offdef, "name", "offense", "defense", "", all_players_infantry),
+        get_top(rcon, callmode, "squad", all_squads_infantry, teamplay, "name", "combat", "support", "", all_players_infantry),
+        # Squads (armor)
+        get_top(rcon, callmode, "squad", all_squads_armor, real_offdef, "name", "offense", "defense", "", all_players_armor),
+        get_top(rcon, callmode, "squad", all_squads_armor, teamplay, "name", "combat", "support", "", all_players_armor),
+    )
+
+
+def stats_on_chat_command(
     rcon: Rcon,
     struct_log: StructuredLogLineWithMetaData
 ):
     """
-    - Punish ("!redeploy" or "!r" in chat)
-    - Show player stats ("!me" in chat)
+    Sends actual top scores in an ingame message to the player who types the defined command in chat
     """
     chat_message: str|None = struct_log["sub_content"]
     if chat_message is None:
@@ -129,171 +450,75 @@ def chat_commands(
     if player_id is None:
         return
 
-    player_name: str|None = struct_log["player_name_1"]
-    if player_name is None:
-        return
+    if struct_log["sub_content"] == CHAT_COMMAND:
+        (
+            top_commanders_teamplay,
+            top_infantry_offdef,
+            top_infantry_teamplay,
+            top_infantry_ratio,
+            top_infantry_killrate,
+            top_squads_infantry_offdef,
+            top_squads_infantry_teamplay,
+            top_squads_armor_offdef,
+            top_squads_armor_teamplay,
+        ) = stats_gather(
+            rcon = rcon,
+            callmode = "chat"
+        )
 
-    # Redeploy (punish)
-    if struct_log["sub_content"] in ["!redeploy", "!r", "§R"]:
-        try :
-            rcon.punish(
-                player_name=player_name,
-                reason=f"{TRANSL['redeploy'][LANG]}",
-                by="custom_chat_commands"
-            )
-        except Exception as error:
-            logger.error(error)
+        message = stats_display(
+            top_commanders_teamplay,
+            top_infantry_offdef,
+            top_infantry_teamplay,
+            top_infantry_ratio,
+            top_infantry_killrate,
+            top_squads_infantry_offdef,
+            top_squads_infantry_teamplay,
+            top_squads_armor_offdef,
+            top_squads_armor_teamplay,
+        )
 
-    # Player profile (get_player_profile)
-    if struct_log["sub_content"] in ["!me"]:
-        try:
-            # Gather data
-            player_profile_data = get_player_profile(
-                player_id=player_id,
-                nb_sessions=0
-            )
-            if player_profile_data is not None:
-                created = player_profile_data["created"]
-                sessions_count = player_profile_data["sessions_count"]
-                total_playtime_seconds = player_profile_data["total_playtime_seconds"]
-                kicks = player_profile_data["penalty_count"]["KICK"]
-                punishes = player_profile_data["penalty_count"]["PUNISH"]
-                tempbans = player_profile_data["penalty_count"]["TEMPBAN"]
-            else:
-                return
+        rcon.message_player(
+            player_id=player_id,
+            message=message,
+            by="top_stats",
+            save_message=False
+        )
 
-            # First time appearance on server
-            created_timestamp = datetime.fromisoformat(str(created))
-            current_time = datetime.now()
-            elapsed_time = current_time - created_timestamp
-            elapsed_days, elapsed_seconds = elapsed_time.days, elapsed_time.seconds
-            elapsed_hours = elapsed_seconds // 3600
-            elapsed_minutes = (elapsed_seconds % 3600) // 60
-            elapsed_seconds = elapsed_seconds % 60
-            elapsed_message = ""
-            if elapsed_days > 0:
-                elapsed_message = str(elapsed_days) + f" {TRANSL['days'][LANG]}, "
-            if elapsed_hours > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_hours) + "h"
-            else:
-                elapsed_message = elapsed_message + " 00h"
-            if elapsed_minutes > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_minutes) + "m"
-            else:
-                elapsed_message = elapsed_message + " 00m"
-            if elapsed_seconds > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_seconds) + "s"
-            else:
-                elapsed_message = elapsed_message + " 00s"
 
-            # Penalties
-            penalties_message = ""
-            if kicks == 0 and punishes == 0 and tempbans == 0:
-                penalties_message = f"{TRANSL['nopunish'][LANG]}"
-            else :
-                if punishes > 0:
-                    penalties_message = penalties_message + str(punishes) + " punishes"
-                if kicks > 0:
-                    if punishes > 0:
-                        penalties_message = penalties_message + ", "
-                    penalties_message = penalties_message + str(kicks) + " kicks"
-                if tempbans > 0:
-                    if punishes > 0 or kicks > 0:
-                        penalties_message = penalties_message + ", "
-                    penalties_message = penalties_message + str(tempbans) + " tempbans"
+def stats_on_match_end(
+    rcon: Rcon,
+    struct_log: StructuredLogLineWithMetaData
+):
+    """
+    Sends final top players in an ingame message to all the players
+    Gives VIP to the top players as configured
+    """
+    (
+        top_commanders_teamplay,
+        top_infantry_offdef,
+        top_infantry_teamplay,
+        top_infantry_ratio,
+        top_infantry_killrate,
+        top_squads_infantry_offdef,
+        top_squads_infantry_teamplay,
+        top_squads_armor_offdef,
+        top_squads_armor_teamplay,
+    ) = stats_gather(
+        rcon = rcon,
+        callmode = "matchend"
+    )
 
-            # db stats
-            tot_games_query = f"SELECT COUNT(*) FROM public.player_stats WHERE name = '{player_name}';"
-            avg_combat_query = f"SELECT AVG(combat) FROM public.player_stats WHERE name = '{player_name}';"
-            avg_offense_query = f"SELECT AVG(offense) FROM public.player_stats WHERE name = '{player_name}';"
-            avg_defense_query = f"SELECT AVG(defense) FROM public.player_stats WHERE name = '{player_name}';"
-            avg_support_query = f"SELECT AVG(support) FROM public.player_stats WHERE name = '{player_name}';"
-            tot_kills_query = f"SELECT SUM(kills) FROM public.player_stats WHERE name = '{player_name}';"
-            tot_teamkills_query = f"SELECT SUM(teamkills) FROM public.player_stats WHERE name = '{player_name}';"
-            tot_deaths_query = f"SELECT SUM(deaths) FROM public.player_stats WHERE name = '{player_name}';"
-            tot_deaths_by_tk_query = f"SELECT SUM(deaths_by_tk) FROM public.player_stats WHERE name = '{player_name}';"
-            most_used_weapons_query = f"SELECT weapon, SUM(usage_count) AS total_usage FROM (SELECT name, weapon_data.key AS weapon, (weapon_data.value::text)::int AS usage_count FROM public.player_stats, jsonb_each(weapons::jsonb) AS weapon_data WHERE name = '{player_name}') AS weapon_usage GROUP BY weapon ORDER BY total_usage DESC LIMIT 3;"
-            most_killed_query = f"SELECT key AS player_name, SUM(value::int) AS total_kills, count(*) FROM public.player_stats, jsonb_each_text(most_killed) WHERE name = '{player_name}' GROUP BY key ORDER BY total_kills DESC LIMIT 3;"
-            most_death_by_query = f"SELECT key AS player_name, SUM(value::int) AS total_kills, count(*) FROM public.player_stats, jsonb_each_text(death_by) WHERE name = '{player_name}' GROUP BY key ORDER BY total_kills DESC LIMIT 3;"
+    message = stats_display(
+        top_commanders_teamplay,
+        top_infantry_offdef,
+        top_infantry_teamplay,
+        top_infantry_ratio,
+        top_infantry_killrate,
+        top_squads_infantry_offdef,
+        top_squads_infantry_teamplay,
+        top_squads_armor_offdef,
+        top_squads_armor_teamplay,
+    )
 
-            with enter_session() as sess:
-                tot_games_result = sess.execute(text(tot_games_query)).fetchone()
-                tot_games = int(tot_games_result[0])
-                avg_combat_result = sess.execute(text(avg_combat_query)).fetchone()
-                avg_combat = round(float(avg_combat_result[0]), 2)
-                avg_offense_result = sess.execute(text(avg_offense_query)).fetchone()
-                avg_offense = round(float(avg_offense_result[0]), 2)
-                avg_defense_result = sess.execute(text(avg_defense_query)).fetchone()
-                avg_defense = round(float(avg_defense_result[0]), 2)
-                avg_support_result = sess.execute(text(avg_support_query)).fetchone()
-                avg_support = round(float(avg_support_result[0]), 2)
-                tot_kills_result = sess.execute(text(tot_kills_query)).fetchone()
-                tot_kills = int(tot_kills_result[0])
-                tot_teamkills_result = sess.execute(text(tot_teamkills_query)).fetchone()
-                tot_teamkills = int(tot_teamkills_result[0])
-                tot_deaths_result = sess.execute(text(tot_deaths_query)).fetchone()
-                tot_deaths = int(tot_deaths_result[0])
-                tot_deaths_by_tk_result = sess.execute(text(tot_deaths_by_tk_query)).fetchone()
-                tot_deaths_by_tk = int(tot_deaths_by_tk_result[0])
-                most_used_weapons_result = sess.execute(text(most_used_weapons_query)).fetchall()
-                most_used_weapons = str(most_used_weapons_result[0][0]) + " (" + str(most_used_weapons_result[0][1]) + " kills)"
-                most_used_weapons = most_used_weapons + "\n" + str(most_used_weapons_result[1][0]) + " (" + str(most_used_weapons_result[1][1]) + " kills)"
-                most_used_weapons = most_used_weapons + "\n" + str(most_used_weapons_result[2][0]) + " (" + str(most_used_weapons_result[2][1]) + " kills)"
-                most_killed_results = sess.execute(text(most_killed_query)).fetchall()
-                most_killed = str(most_killed_results[0][0]) + " : " + str(most_killed_results[0][1]) + " (" + str(most_killed_results[0][2]) + " games)"
-                most_killed = most_killed + "\n" + str(most_killed_results[1][0]) + " : " + str(most_killed_results[1][1]) + " (" + str(most_killed_results[1][2]) + " games)"
-                most_killed = most_killed + "\n" + str(most_killed_results[2][0]) + " : " + str(most_killed_results[2][1]) + " (" + str(most_killed_results[2][2]) + " games)"
-                most_death_by_results = sess.execute(text(most_death_by_query)).fetchall()
-                most_death_by = str(most_death_by_results[0][0]) + " : " + str(most_death_by_results[0][1]) + " (" + str(most_death_by_results[0][2]) + " games)"
-                most_death_by = most_death_by + "\n" + str(most_death_by_results[1][0]) + " : " + str(most_death_by_results[1][1]) + " (" + str(most_death_by_results[1][2]) + " games)"
-                most_death_by = most_death_by + "\n" + str(most_death_by_results[2][0]) + " : " + str(most_death_by_results[2][1]) + " (" + str(most_death_by_results[2][2]) + " games)"
-
-            ratio_kd = round(((tot_kills-tot_teamkills)/(tot_deaths-tot_deaths_by_tk)), 2)
-
-            # Message to send
-            message = (
-                f"{player_name}\n"
-                "\n"
-                f"{TRANSL['firsttimehere'][LANG]}\n"
-                f"{elapsed_message}\n"
-                f"{TRANSL['gamesessions'][LANG]} : {str(sessions_count)}\n"
-                f"{TRANSL['playedgames'][LANG]} : {str(tot_games)}\n"
-                "\n"
-                f"{TRANSL['cumulatedplaytime'][LANG]}\n"
-                f"{str(readable_duration(total_playtime_seconds))}\n"
-                f"({TRANSL['averagesession'][LANG]} : {str(readable_duration(total_playtime_seconds/sessions_count))})\n"
-                "\n"
-                f"▒ {TRANSL['punishments'][LANG]} ▒\n"
-                f"{penalties_message}\n"
-                "\n"
-                f"▒ {TRANSL['averages'][LANG]} ▒\n"
-                f"{TRANSL['combat'][LANG]} : {str(avg_combat)} ; {TRANSL['support'][LANG]} : {str(avg_support)}\n"
-                f"{TRANSL['offense'][LANG]} : {str(avg_offense)} ; {TRANSL['defense'][LANG]} : {str(avg_defense)}\n"
-                "\n"
-                f"▒ {TRANSL['totals'][LANG]} ▒\n"
-                f"{TRANSL['kills'][LANG]} : {str(tot_kills)} ({str(tot_teamkills)} TKs)\n"
-                f"{TRANSL['deaths'][LANG]} : {str(tot_deaths)} ({str(tot_deaths_by_tk)} TKs)\n"
-                f"{TRANSL['ratio'][LANG]} {TRANSL['kills'][LANG]}/{TRANSL['deaths'][LANG]} : {str(ratio_kd)}\n"
-                "\n"
-                f"▒ {TRANSL['favoriteweapons'][LANG]} ▒\n"
-                f"{most_used_weapons}\n"
-                "\n"
-                f"▒ {TRANSL['victims'][LANG]} ▒\n"
-                f"{most_killed}\n"
-                "\n"
-                f"▒ {TRANSL['nemesis'][LANG]} ▒\n"
-                f"{most_death_by}"
-            )
-
-            # Send message
-            rcon.message_player(
-                player_id=player_id,
-                message=message,
-                by="custom_chatcommands",
-                save_message=False
-            )
-
-        except Exception as error:
-            logger.error(error)
-
-logger = logging.getLogger(__name__)
+    message_all_players(rcon, message)
