@@ -25,4 +25,7 @@ Install (open this file for complete procedure) :
   cd /root/hll_rcon_tool
   sh ./restart.sh
   ```
-Any change to the `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` or the `/root/hll_rcon_tool/hooks.py` file will need a CRCON restart with the above commands to be taken in account.
+⚠️ Any change to these files :
+- `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` ;
+- `/root/hll_rcon_tool/hooks.py`
+... will need a CRCON restart with the above commands to be taken in account.
