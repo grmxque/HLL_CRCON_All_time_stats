@@ -41,5 +41,5 @@ To successfully upgrade your CRCON, you'll have to revert the changes back, then
 To revert to the original file :  
 ```shell
 cd /root/hll_rcon_tool
-git restore /root/hll_rcon_tool/hooks.py
+git restore rcon/hooks.py
 ```
