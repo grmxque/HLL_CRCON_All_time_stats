@@ -1,4 +1,4 @@
-## HLL_CRCON_All_time_stats
+# HLL_CRCON_All_time_stats
 
 A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
 that does different things on chat commands :  
