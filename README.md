@@ -5,7 +5,7 @@ that does different things on chat commands :
 
 ![375490122-d8c7be50-aa6e-4949-b789-c327cacb2a1a](https://github.com/user-attachments/assets/4e9105d9-f87b-40e9-a489-da74cbb8f267)
 
-Install (open this file for complete procedure) :
+## Install
 - Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`) ;
 - Copy `hooks_custom_chatcommands.py` in `/root/hll_rcon_tool/custom_tools/` ;
 - Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`) ;
@@ -20,6 +20,9 @@ Install (open this file for complete procedure) :
     def commands_onchat(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         hooks_custom_chatcommands.chat_commands(rcon, struct_log)
     ```
+
+## Config
+- Edit `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` and set the parameters to your needs ;
 - Restart CRCON :
   ```shell
   cd /root/hll_rcon_tool
