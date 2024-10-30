@@ -11,7 +11,7 @@ that does different things on chat commands :
 - Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`) ;
 - Copy `hooks_custom_chatcommands.py` in `/root/hll_rcon_tool/custom_tools/` ;
 - Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`) ;
-- Edit `/root/hll_rcon_tool/hooks.py` and add these lines:
+- Edit `/root/hll_rcon_tool/rcon/hooks.py` and add these lines:
   - in the import part, on top of the file
     ```python
     import custom_tools.hooks_custom_chatcommands as hooks_custom_chatcommands
@@ -34,10 +34,10 @@ that does different things on chat commands :
 ## Limitations
 ⚠️ Any change to these files :
 - `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` ;
-- `/root/hll_rcon_tool/hooks.py`  
+- `/root/hll_rcon_tool/rcon/hooks.py`  
 ...will need a CRCON restart (using `restart.sh` script) to be taken in account.
 
-⚠️ This plugin requires a modification of the `/root/hll_rcon_tool/hooks.py` file, which originates from the official CRCON depot.  
+⚠️ This plugin requires a modification of the `/root/hll_rcon_tool/rcon/hooks.py` file, which originates from the official CRCON depot.  
 If any CRCON upgrade implies updating this file, the usual upgrade procedure, as given in official CRCON instructions, will **FAIL**.  
 To successfully upgrade your CRCON, you'll have to revert the changes back, then reinstall this plugin.  
 To revert to the original file :  
