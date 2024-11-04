@@ -2,7 +2,6 @@
 hooks_custom_chatcommands
 
 A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool)
-- Fast redeployment (admin punish)
 - Display player's data for this server
 
 Source : https://github.com/ElGuillermo
@@ -26,9 +25,6 @@ from rcon.rcon import Rcon, StructuredLogLineWithMetaData
 # The command the players have to enter in chat to display their stats
 CHAT_COMMAND_STATS = ["!me"]
 
-# The command the players have to enter in chat to ask for a redeployment
-CHAT_COMMAND_REDEPLOY = ["!redeploy", "!r", "§r", "§R", "§R"]
-
 # Strings translations
 # Available : 0 for english, 1 for french, 2 for german
 LANG = 0
@@ -47,8 +43,6 @@ TRANSL = {
     "hours": ["hours", "heures", "Dienststunden"],
     "minutes": ["minutes", "minutes", "Minuten"],
     "seconds": ["seconds", "secondes", "Sekunden"],
-    # Fast redeploy
-    "redeploy": ["redeploy", "redéploiement", "Umschichtung"],
     # for this script only
     "nopunish": ["None ! Well done !", "Aucune ! Félicitations !", "Keiner! Gut gemacht!"],
     "firsttimehere": ["first time here", "tu es venu(e) il y a", "zum ersten Mal hier"],
@@ -138,17 +132,6 @@ def chat_commands(
     player_name: str|None = struct_log["player_name_1"]
     if player_name is None:
         return
-
-    # Redeploy (punish)
-    if struct_log["sub_content"] in CHAT_COMMAND_REDEPLOY:
-        try :
-            rcon.punish(
-                player_name=player_name,
-                reason=f"{TRANSL['redeploy'][LANG]}",
-                by="custom_chat_commands"
-            )
-        except Exception as error:
-            logger.error(error)
 
     # Player profile (get_player_profile)
     if struct_log["sub_content"] in CHAT_COMMAND_STATS:
