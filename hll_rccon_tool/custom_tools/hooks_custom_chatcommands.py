@@ -118,8 +118,7 @@ def chat_commands(
     struct_log: StructuredLogLineWithMetaData
 ):
     """
-    - Fast redeploy
-    - Show player stats
+    Show player stats
     """
     chat_message: str|None = struct_log["sub_content"]
     if chat_message is None:
