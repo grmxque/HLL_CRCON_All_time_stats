@@ -5,15 +5,16 @@ A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that dis
 ![375490122-d8c7be50-aa6e-4949-b789-c327cacb2a1a](https://github.com/user-attachments/assets/4e9105d9-f87b-40e9-a489-da74cbb8f267)
 
 ## Install
-- Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`) ;
-- Copy `all_time_stats.py` in `/root/hll_rcon_tool/custom_tools/` ;
-- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`) ;
+- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)
+- Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)
+- Copy this file into the newly created `/root/hll_rcon_tool/custom_tools/` folder :
+  - `all_time_stats.py`
 - Edit `/root/hll_rcon_tool/rcon/hooks.py` and add these lines:
-  - in the import part, on top of the file
+  - (in the import part, on top of the file)
     ```python
     import custom_tools.all_time_stats as all_time_stats
     ```
-  - At the very end of the file
+  - (at the very end of the file)
     ```python
     @on_chat
     def alltimestats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
