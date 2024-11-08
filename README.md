@@ -6,22 +6,22 @@ A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that dis
 
 ## Install
 - Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`) ;
-- Copy `hooks_custom_chatcommands.py` in `/root/hll_rcon_tool/custom_tools/` ;
+- Copy `all_time_stats.py` in `/root/hll_rcon_tool/custom_tools/` ;
 - Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`) ;
 - Edit `/root/hll_rcon_tool/rcon/hooks.py` and add these lines:
   - in the import part, on top of the file
     ```python
-    import custom_tools.hooks_custom_chatcommands as hooks_custom_chatcommands
+    import custom_tools.all_time_stats as all_time_stats
     ```
   - At the very end of the file
     ```python
     @on_chat
-    def commands_onchat(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
-        hooks_custom_chatcommands.chat_commands(rcon, struct_log)
+    def alltimestats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
+      all_time_stats.all_time_stats(rcon, struct_log)
     ```
 
 ## Config
-- Edit `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` and set the parameters to your needs ;
+- Edit `/root/hll_rcon_tool/custom_tools/all_time_stats.py` and set the parameters to your needs ;
 - Restart CRCON :
   ```shell
   cd /root/hll_rcon_tool
@@ -30,7 +30,7 @@ A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that dis
 
 ## Limitations
 ⚠️ Any change to these files :
-- `/root/hll_rcon_tool/custom_tools/hooks_custom_chatcommands.py` ;
+- `/root/hll_rcon_tool/custom_tools/all_time_stats.py` ;
 - `/root/hll_rcon_tool/rcon/hooks.py`  
 ...will need a CRCON restart (using `restart.sh` script) to be taken in account.
 
