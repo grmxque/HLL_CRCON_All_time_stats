@@ -30,10 +30,9 @@ A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that dis
   ```
 
 ## Limitations
-⚠️ Any change to these files :
-- `/root/hll_rcon_tool/custom_tools/all_time_stats.py` ;
-- `/root/hll_rcon_tool/rcon/hooks.py`  
-...will need a CRCON restart (using `restart.sh` script) to be taken in account.
+⚠️ Any change to these files requires a CRCON rebuild and restart (using the `restart.sh` script) to be taken in account :
+- `/root/hll_rcon_tool/custom_tools/all_time_stats.py`
+- `/root/hll_rcon_tool/rcon/hooks.py`
 
 ⚠️ This plugin requires a modification of the `/root/hll_rcon_tool/rcon/hooks.py` file, which originates from the official CRCON depot.  
 If any CRCON upgrade implies updating this file, the usual upgrade procedure, as given in official CRCON instructions, will **FAIL**.  
