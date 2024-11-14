@@ -1,6 +1,6 @@
 # HLL_CRCON_All_time_stats
 
-A plugin for HLL CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that displays statistic data about the player asking for them in chat (`!me`) ;
+A plugin for Hell Let Loose (HLL) CRCON (see : https://github.com/MarechJ/hll_rcon_tool) that displays statistic data about the player asking for them in chat (`!me`) ;
 
 ![375490122-d8c7be50-aa6e-4949-b789-c327cacb2a1a](https://github.com/user-attachments/assets/4e9105d9-f87b-40e9-a489-da74cbb8f267)
 
