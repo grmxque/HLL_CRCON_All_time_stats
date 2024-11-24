@@ -5,10 +5,14 @@ A plugin for Hell Let Loose (HLL) CRCON (see : https://github.com/MarechJ/hll_rc
 ![375490122-d8c7be50-aa6e-4949-b789-c327cacb2a1a](https://github.com/user-attachments/assets/4e9105d9-f87b-40e9-a489-da74cbb8f267)
 
 ## Install
-- Copy `restart.sh` in CRCON's root (`/root/hll_rcon_tool/`)
-- Create `custom_tools` folder in CRCON's root (`/root/hll_rcon_tool/`)
-- Copy this file into the newly created `/root/hll_rcon_tool/custom_tools/` folder :
-  - `all_time_stats.py`
+- Log into your CRCON host machine using SSH and enter these commands :
+  ```shell
+  cd /root/hll_rcon_tool
+  wget https://raw.githubusercontent.com/ElGuillermo/HLL_RCON_restart/refs/heads/main/restart.sh
+  mkdir custom_tools
+  cd custom_tools
+  wget https://raw.githubusercontent.com/ElGuillermo/HLL_CRCON_All_time_stats/refs/heads/main/hll_rcon_tool/custom_tools/all_time_stats.py
+  ```
 - Edit `/root/hll_rcon_tool/rcon/hooks.py` and add these lines:
   - (in the import part, on top of the file)
     ```python
