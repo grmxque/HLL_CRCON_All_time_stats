@@ -12,7 +12,7 @@ Feel free to use/modify/distribute, as long as you keep this note in your code
 from datetime import datetime
 import logging
 
-from sqlalchemy.sql import text  # type: ignore
+from sqlalchemy.sql import text
 
 from rcon.models import enter_session
 from rcon.player_history import get_player_profile
@@ -28,7 +28,6 @@ CHAT_COMMAND = ["!me"]
 # Strings translations
 # Available : 0 for english, 1 for french, 2 for german
 LANG = 0
-
 
 # Translations
 # format is : "key": ["english", "french", "german"]
@@ -161,35 +160,35 @@ def all_time_stats(
             elapsed_seconds = elapsed_seconds % 60
             elapsed_message = ""
             if elapsed_days > 0:
-                elapsed_message = str(elapsed_days) + f" {TRANSL['days'][LANG]}, "
+                elapsed_message += str(elapsed_days) + f" {TRANSL['days'][LANG]}, "
             if elapsed_hours > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_hours) + "h"
+                elapsed_message += " " + str(elapsed_hours) + "h"
             else:
-                elapsed_message = elapsed_message + " 00h"
+                elapsed_message += " 00h"
             if elapsed_minutes > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_minutes) + "m"
+                elapsed_message += " " + str(elapsed_minutes) + "m"
             else:
-                elapsed_message = elapsed_message + " 00m"
+                elapsed_message += " 00m"
             if elapsed_seconds > 0:
-                elapsed_message = elapsed_message + " " + str(elapsed_seconds) + "s"
+                elapsed_message += " " + str(elapsed_seconds) + "s"
             else:
-                elapsed_message = elapsed_message + " 00s"
+                elapsed_message += " 00s"
 
             # Penalties
             penalties_message = ""
             if kicks == 0 and punishes == 0 and tempbans == 0:
-                penalties_message = f"{TRANSL['nopunish'][LANG]}"
+                penalties_message += f"{TRANSL['nopunish'][LANG]}"
             else :
                 if punishes > 0:
-                    penalties_message = penalties_message + str(punishes) + " punishes"
+                    penalties_message += str(punishes) + " punishes"
                 if kicks > 0:
                     if punishes > 0:
-                        penalties_message = penalties_message + ", "
-                    penalties_message = penalties_message + str(kicks) + " kicks"
+                        penalties_message += ", "
+                    penalties_message += str(kicks) + " kicks"
                 if tempbans > 0:
                     if punishes > 0 or kicks > 0:
-                        penalties_message = penalties_message + ", "
-                    penalties_message = penalties_message + str(tempbans) + " tempbans"
+                        penalties_message += ", "
+                    penalties_message += str(tempbans) + " tempbans"
 
             # db stats
             tot_games_query = f"SELECT COUNT(*) FROM public.player_stats WHERE name = '{player_name}';"
@@ -226,16 +225,16 @@ def all_time_stats(
                 tot_deaths_by_tk = int(tot_deaths_by_tk_result[0])
                 most_used_weapons_result = sess.execute(text(most_used_weapons_query)).fetchall()
                 most_used_weapons = str(most_used_weapons_result[0][0]) + " (" + str(most_used_weapons_result[0][1]) + " kills)"
-                most_used_weapons = most_used_weapons + "\n" + str(most_used_weapons_result[1][0]) + " (" + str(most_used_weapons_result[1][1]) + " kills)"
-                most_used_weapons = most_used_weapons + "\n" + str(most_used_weapons_result[2][0]) + " (" + str(most_used_weapons_result[2][1]) + " kills)"
+                most_used_weapons += "\n" + str(most_used_weapons_result[1][0]) + " (" + str(most_used_weapons_result[1][1]) + " kills)"
+                most_used_weapons += "\n" + str(most_used_weapons_result[2][0]) + " (" + str(most_used_weapons_result[2][1]) + " kills)"
                 most_killed_results = sess.execute(text(most_killed_query)).fetchall()
                 most_killed = str(most_killed_results[0][0]) + " : " + str(most_killed_results[0][1]) + " (" + str(most_killed_results[0][2]) + " games)"
-                most_killed = most_killed + "\n" + str(most_killed_results[1][0]) + " : " + str(most_killed_results[1][1]) + " (" + str(most_killed_results[1][2]) + " games)"
-                most_killed = most_killed + "\n" + str(most_killed_results[2][0]) + " : " + str(most_killed_results[2][1]) + " (" + str(most_killed_results[2][2]) + " games)"
+                most_killed += "\n" + str(most_killed_results[1][0]) + " : " + str(most_killed_results[1][1]) + " (" + str(most_killed_results[1][2]) + " games)"
+                most_killed += "\n" + str(most_killed_results[2][0]) + " : " + str(most_killed_results[2][1]) + " (" + str(most_killed_results[2][2]) + " games)"
                 most_death_by_results = sess.execute(text(most_death_by_query)).fetchall()
                 most_death_by = str(most_death_by_results[0][0]) + " : " + str(most_death_by_results[0][1]) + " (" + str(most_death_by_results[0][2]) + " games)"
-                most_death_by = most_death_by + "\n" + str(most_death_by_results[1][0]) + " : " + str(most_death_by_results[1][1]) + " (" + str(most_death_by_results[1][2]) + " games)"
-                most_death_by = most_death_by + "\n" + str(most_death_by_results[2][0]) + " : " + str(most_death_by_results[2][1]) + " (" + str(most_death_by_results[2][2]) + " games)"
+                most_death_by += "\n" + str(most_death_by_results[1][0]) + " : " + str(most_death_by_results[1][1]) + " (" + str(most_death_by_results[1][2]) + " games)"
+                most_death_by += "\n" + str(most_death_by_results[2][0]) + " : " + str(most_death_by_results[2][1]) + " (" + str(most_death_by_results[2][2]) + " games)"
 
             ratio_kd = round(((tot_kills - tot_teamkills) / (tot_deaths - tot_deaths_by_tk)), 2)
 
