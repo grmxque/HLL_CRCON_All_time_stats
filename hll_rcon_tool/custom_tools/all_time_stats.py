@@ -1,5 +1,5 @@
 """
-all_time_stats
+all_time_stats.py
 
 A plugin for HLL CRCON (https://github.com/MarechJ/hll_rcon_tool)
 that displays player's data for this server
