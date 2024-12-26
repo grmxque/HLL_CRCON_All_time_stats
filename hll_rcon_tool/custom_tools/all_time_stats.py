@@ -67,7 +67,7 @@ TRANSL = {
 
 def readable_duration(seconds: int) -> str:
     """
-    returns a human readable string (years, monthes, days, hours, minutes, seconds)
+    returns a human readable string (years, monthes, days, XXhXXmXXs)
     from a number of seconds
     """
     years, lessthanayearseconds = divmod(seconds, 31536000)
