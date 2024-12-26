@@ -1,3 +1,14 @@
+"""
+all_time_stats.py
+
+A plugin for HLL CRCON (https://github.com/MarechJ/hll_rcon_tool)
+that displays a player's all-time stats on chat command
+
+Source : https://github.com/ElGuillermo
+
+Feel free to use/modify/distribute, as long as you keep this note in your code
+"""
+
 from datetime import datetime
 import logging
 
@@ -16,7 +27,7 @@ CHAT_COMMAND = ["!me"]
 
 # Strings translations
 # Available : 0 for english, 1 for french, 2 for german
-LANG = 0
+LANG = 1
 
 # Translations
 # format is : "key": ["english", "french", "german"]
@@ -55,6 +66,10 @@ TRANSL = {
 
 
 def readable_duration(seconds: int) -> str:
+    """
+    returns a human readable string (years, monthes, days, hours, minutes, seconds)
+    from a number of seconds
+    """
     years, lessthanayearseconds = divmod(seconds, 31536000)
     monthes, lessthanamonthseconds = divmod(lessthanayearseconds, 2592000)
     days, lessthanadayseconds = divmod(lessthanamonthseconds, 86400)
@@ -84,7 +99,7 @@ def readable_duration(seconds: int) -> str:
 
     if minutes > 0:
         if minutes < 10:
-            time_string += "0"    
+            time_string += "0"
         time_string += f"{int(minutes)}m"
     else:
         time_string += "00m"
@@ -100,6 +115,9 @@ def readable_duration(seconds: int) -> str:
 
 
 def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
+    """
+    get data from profile and database and return it in an ingame message
+    """
     if not (chat_message := struct_log["sub_content"]) or \
        not (player_id := struct_log["player_id_1"]) or \
        not (player_name := struct_log["player_name_1"]):
@@ -119,7 +137,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             tempbans = player_profile_data["penalty_count"]["TEMPBAN"]
 
             elapsed_time_seconds = (datetime.now() - datetime.fromisoformat(str(created))).total_seconds()
-            
+
             penalties_message = ""
             if kicks == 0 and punishes == 0 and tempbans == 0:
                 penalties_message += f"{TRANSL['nopunish'][LANG]}"
@@ -136,7 +154,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                     penalties_message += f"{tempbans} tempbans"
 
             player_id_query = "SELECT s.id FROM steam_id_64 AS s WHERE s.steam_id_64 = :player_id"
-            
+
             queries = {
                 "tot_games": "SELECT COUNT(*) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
                 "avg_combat": "SELECT AVG(combat) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
@@ -182,10 +200,10 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                 db_player_result = sess.execute(text(player_id_query), {"player_id": player_id}).fetchone()
                 if not db_player_result:
                     return
-                    
+
                 db_player_id = db_player_result[0]
                 params = {"db_player_id": db_player_id}
-                
+
                 results = {}
                 for key, query in queries.items():
                     result = sess.execute(text(query), params).fetchall()
@@ -202,17 +220,17 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                 tot_deaths_by_tk = int(results["tot_deaths_by_tk"][0][0])
 
                 most_used_weapons = "\n".join(
-                    f"{row[0]} ({row[1]} kills)" 
+                    f"{row[0]} ({row[1]} kills)"
                     for row in results["most_used_weapons"][:3]
                 )
 
                 most_killed = "\n".join(
-                    f"{row[0]} : {row[1]} ({row[2]} games)" 
+                    f"{row[0]} : {row[1]} ({row[2]} games)"
                     for row in results["most_killed"][:3]
                 )
 
                 most_death_by = "\n".join(
-                    f"{row[0]} : {row[1]} ({row[2]} games)" 
+                    f"{row[0]} : {row[1]} ({row[2]} games)"
                     for row in results["most_death_by"][:3]
                 )
 
