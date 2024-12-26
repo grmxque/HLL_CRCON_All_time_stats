@@ -27,7 +27,7 @@ CHAT_COMMAND = ["!me"]
 
 # Strings translations
 # Available : 0 for english, 1 for french, 2 for german
-LANG = 1
+LANG = 0
 
 # Translations
 # format is : "key": ["english", "french", "german"]
