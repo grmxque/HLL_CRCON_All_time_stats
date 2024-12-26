@@ -56,39 +56,48 @@ TRANSL = {
 
 def readable_duration(seconds: int) -> str:
     years, lessthanayearseconds = divmod(seconds, 31536000)
-    monthes, lessthanamonthseconds = divmod(lessthanayearseconds, 18446400)
-    weeks, lessthanaweekseconds = divmod(lessthanamonthseconds, 604800)
-    days, lessthanadayseconds = divmod(lessthanaweekseconds, 86400)
+    monthes, lessthanamonthseconds = divmod(lessthanayearseconds, 2592000)
+    days, lessthanadayseconds = divmod(lessthanamonthseconds, 86400)
     hours, lessthananhourseconds = divmod(lessthanadayseconds, 3600)
     minutes, seconds = divmod(lessthananhourseconds, 60)
 
-    time_string = []
+    time_string = ""
     if years > 0:
-        time_string.append(f"{int(years)} {TRANSL['years'][LANG]}")
+        time_string += f"{int(years)} {TRANSL['years'][LANG]}"
+
     if monthes > 0:
         if years > 0:
-            time_string.append(", ")
-        time_string.append(f"{int(monthes)} {TRANSL['monthes'][LANG]}")
-    if weeks > 0:
-        if years > 0 or monthes > 0:
-            time_string.append(", ")
-        time_string.append(f"{int(weeks)} {TRANSL['weeks'][LANG]}")
-    if days > 0:
-        time_string.append(f"{int(days)} {TRANSL['days'][LANG]}")
-    if hours > 0:
-        time_string.append(f"{int(hours)}h")
-    else:
-        time_string.append("0h")
-    if minutes > 0:
-        time_string.append(f"{int(minutes)}m")
-    else:
-        time_string.append("00m")
-    if seconds > 0:
-        time_string.append(f"{int(seconds)}s")
-    else:
-        time_string.append("00s")
+            time_string += ", "
+        time_string += f"{int(monthes)} {TRANSL['monthes'][LANG]}"
 
-    return ' '.join(time_string)
+    if days > 0:
+        if years > 0 or monthes > 0:
+            time_string += ", "
+        time_string += f"{int(days)} {TRANSL['days'][LANG]}"
+
+    if hours > 0:
+        if years > 0 or monthes > 0 or days > 0:
+            time_string += ", "
+        time_string += f"{int(hours)}h"
+    else:
+        time_string += ", 0h"
+
+    if minutes > 0:
+        if minutes < 10:
+            time_string += "0"    
+        time_string += f"{int(minutes)}m"
+    else:
+        time_string += "00m"
+
+    if seconds > 0:
+        if seconds < 10:
+            time_string += "0"
+        time_string += f"{int(seconds)}s"
+    else:
+        time_string += "00s"
+
+    return time_string
+
 
 def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
     if not (chat_message := struct_log["sub_content"]) or \
@@ -109,30 +118,8 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             punishes = player_profile_data["penalty_count"]["PUNISH"]
             tempbans = player_profile_data["penalty_count"]["TEMPBAN"]
 
-            created_timestamp = datetime.fromisoformat(str(created))
-            current_time = datetime.now()
-            elapsed_time = current_time - created_timestamp
-            elapsed_days, elapsed_seconds = elapsed_time.days, elapsed_time.seconds
-            elapsed_hours = elapsed_seconds // 3600
-            elapsed_minutes = (elapsed_seconds % 3600) // 60
-            elapsed_seconds = elapsed_seconds % 60
+            elapsed_time_seconds = (datetime.now() - datetime.fromisoformat(str(created))).total_seconds()
             
-            elapsed_message = ""
-            if elapsed_days > 0:
-                elapsed_message += f"{elapsed_days} {TRANSL['days'][LANG]}, "
-            if elapsed_hours > 0:
-                elapsed_message += f" {elapsed_hours}h"
-            else:
-                elapsed_message += " 00h"
-            if elapsed_minutes > 0:
-                elapsed_message += f" {elapsed_minutes}m"
-            else:
-                elapsed_message += " 00m"
-            if elapsed_seconds > 0:
-                elapsed_message += f" {elapsed_seconds}s"
-            else:
-                elapsed_message += " 00s"
-
             penalties_message = ""
             if kicks == 0 and punishes == 0 and tempbans == 0:
                 penalties_message += f"{TRANSL['nopunish'][LANG]}"
@@ -235,7 +222,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                 f"{player_name}\n"
                 "\n"
                 f"{TRANSL['firsttimehere'][LANG]}\n"
-                f"{elapsed_message}\n"
+                f"{readable_duration(elapsed_time_seconds)}\n"
                 f"{TRANSL['gamesessions'][LANG]} : {sessions_count}\n"
                 f"{TRANSL['playedgames'][LANG]} : {tot_games}\n"
                 "\n"
@@ -274,5 +261,6 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
 
         except Exception as error:
             logger.error(error)
+
 
 logger = logging.getLogger(__name__)
