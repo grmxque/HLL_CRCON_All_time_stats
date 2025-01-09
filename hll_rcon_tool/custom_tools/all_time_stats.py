@@ -26,39 +26,39 @@ from rcon.rcon import Rcon, StructuredLogLineWithMetaData
 CHAT_COMMAND = ["!me"]
 
 # Strings translations
-# Available : 0 for english, 1 for french, 2 for german
+# Available : 0 for english, 1 for french, 2 for german, 3 for polish
 LANG = 0
 
 # Translations
-# format is : "key": ["english", "french", "german"]
+# format is : "key": ["english", "french", "german", "polish"]
 # ----------------------------------------------
 TRANSL = {
-    "years": ["years", "années", "Jahre"],
-    "monthes": ["monthes", "mois", "Monate"],
-    "weeks": ["weeks", "semaines", "Wochen"],
-    "days": ["days", "jours", "Tage"],
-    "hours": ["hours", "heures", "Dienststunden"],
-    "minutes": ["minutes", "minutes", "Minuten"],
-    "seconds": ["seconds", "secondes", "Sekunden"],
-    "nopunish": ["None ! Well done !", "Aucune ! Félicitations !", "Keiner! Gut gemacht!"],
-    "firsttimehere": ["first time here", "tu es venu(e) il y a", "zum ersten Mal hier"],
-    "gamesessions": ["game sessions", "sessions de jeu", "Spielesitzungen"],
-    "playedgames": ["played games", "parties jouées", "gespielte Spiele"],
-    "cumulatedplaytime": ["cumulated play time", "temps de jeu cumulé", "kumulierte Spielzeit"],
-    "averagesession": ["average session", "session moyenne", "Durchschnittliche Sitzung"],
-    "punishments": ["punishments", "punitions", "Strafen"],
-    "averages": ["averages", "moyennes", "Durchschnittswerte"],
-    "favoriteweapons": ["favorite weapons", "armes favorites", "Lieblingswaffen"],
-    "victims": ["victims", "victimes", "Opfer"],
-    "nemesis": ["nemesis", "nemesis", "Nemesis"],
-    "combat": ["combat", "combat", "kampf"],
-    "offense": ["attack", "attaque", "angriff"],
-    "defense": ["defense", "défense", "verteidigung"],
-    "support": ["support", "soutien", "unterstützung"],
-    "totals": ["totals", "totaux", "Gesamtsummen"],
-    "kills": ["kills", "kills", "tötet"],
-    "deaths": ["deaths", "morts", "todesfälle"],
-    "ratio": ["ratio", "ratio", "verhältnis"],
+    "years": ["years", "années", "Jahre", "Lata"],
+    "monthes": ["monthes", "mois", "Monate", "Miesiące"],
+    "weeks": ["weeks", "semaines", "Wochen", "Tygodnie"],
+    "days": ["days", "jours", "Tage", "Dni"],
+    "hours": ["hours", "heures", "Dienststunden", "Godziny"],
+    "minutes": ["minutes", "minutes", "Minuten", "Minuty"],
+    "seconds": ["seconds", "secondes", "Sekunden", "Sekundy"],
+    "nopunish": ["None ! Well done !", "Aucune ! Félicitations !", "Keiner! Gut gemacht!", "Brak! Dobra robota!"],
+    "firsttimehere": ["first time here", "tu es venu(e) il y a", "zum ersten Mal hier", "Pierwszy raz tutaj"],
+    "gamesessions": ["game sessions", "sessions de jeu", "Spielesitzungen", "Sesji"],
+    "playedgames": ["played games", "parties jouées", "gespielte Spiele", "Rozegranych gier"],
+    "cumulatedplaytime": ["cumulated play time", "temps de jeu cumulé", "kumulierte Spielzeit", "Łączny czas gry"],
+    "averagesession": ["average session", "session moyenne", "Durchschnittliche Sitzung", "Średnio na sesje"],
+    "punishments": ["punishments", "punitions", "Strafen", "Kary"],
+    "averages": ["averages", "moyennes", "Durchschnittswerte", "Średnie"],
+    "favoriteweapons": ["favorite weapons", "armes favorites", "Lieblingswaffen", "Ulubione bronie"],
+    "victims": ["victims", "victimes", "Opfer", "Ofiary"],
+    "nemesis": ["nemesis", "nemesis", "Nemesis", "Nemesis"],
+    "combat": ["combat", "combat", "kampf", "walka"],
+    "offense": ["attack", "attaque", "angriff", "ofensywa"],
+    "defense": ["defense", "défense", "verteidigung", "defensywa"],
+    "support": ["support", "soutien", "unterstützung", "wsparcie"],
+    "totals": ["totals", "totaux", "Gesamtsummen", "Łącznie"],
+    "kills": ["kills", "kills", "tötet", "zabójstwa"],
+    "deaths": ["deaths", "morts", "todesfälle", "śmierci"],
+    "ratio": ["ratio", "ratio", "verhältnis", "średnia"],
 }
 
 # (End of configuration)
