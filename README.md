@@ -43,11 +43,11 @@ that displays statistic data about the player, either
     ```python
     @on_connected()
     def alltimestats_on_connected(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
-      all_time_stats.all_time_stats_on_connected(rcon, struct_log)
+        all_time_stats.all_time_stats_on_connected(rcon, struct_log)
 
     @on_chat
     def alltimestats_on_chat_command(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
-      all_time_stats.all_time_stats_on_chat_command(rcon, struct_log)
+        all_time_stats.all_time_stats_on_chat_command(rcon, struct_log)
     ```
 
 ## Config
