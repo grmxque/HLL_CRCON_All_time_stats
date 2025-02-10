@@ -42,11 +42,11 @@ that displays statistic data about the player, either
   - (at the very end of the file)
     ```python
     @on_connected()
-    def alltimestats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
+    def alltimestats_on_connected(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
       all_time_stats.all_time_stats_on_connected(rcon, struct_log)
 
     @on_chat
-    def alltimestats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
+    def alltimestats_on_chat_command(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
       all_time_stats.all_time_stats_on_chat_command(rcon, struct_log)
     ```
 
