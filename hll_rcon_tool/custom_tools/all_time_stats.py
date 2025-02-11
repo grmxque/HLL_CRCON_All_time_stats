@@ -294,7 +294,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             player_name=player_name,
             player_id=player_id,
             message=message,
-            by="custom_chatcommands",
+            by="all_time_stats",
             save_message=False
         )
 
