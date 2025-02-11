@@ -94,12 +94,12 @@ def readable_duration(seconds: int) -> str:
             time_string += ", "
         time_string += f"{int(days)} {TRANSL['days'][LANG]}"
 
+    if years > 0 or monthes > 0 or days > 0:
+        time_string += ", "
     if hours > 0:
-        if years > 0 or monthes > 0 or days > 0:
-            time_string += ", "
         time_string += f"{int(hours)}h"
     else:
-        time_string += ", 0h"
+        time_string += "0h"
 
     if minutes > 0:
         if minutes < 10:
@@ -309,4 +309,5 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         logger.error(error)
 
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
+logger = logging.getLogger('rcon')
