@@ -131,6 +131,7 @@ def all_time_stats_on_chat_command(rcon: Rcon, struct_log: StructuredLogLineWith
     Call the message on chat command
     """
     if not (chat_message := struct_log["sub_content"]):
+       logger.error("No sub_content in CHAT log")
        return
     if chat_message in CHAT_COMMAND:
         all_time_stats(rcon, struct_log)
@@ -142,11 +143,13 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
     """
     if not (player_id := struct_log["player_id_1"]) or \
        not (player_name := struct_log["player_name_1"]):
+       logger.error("No player_id or player_name")
        return
 
     try:
         player_profile_data = get_player_profile(player_id=player_id, nb_sessions=0)
         if player_profile_data is None:
+            logger.error("No player_profile_data")
             return
 
         created = player_profile_data["created"]
@@ -219,6 +222,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         with enter_session() as sess:
             db_player_result = sess.execute(text(player_id_query), {"player_id": player_id}).fetchone()
             if not db_player_result:
+                logger.error(f"No db_player_id for {player_id}")
                 return
 
             db_player_id = db_player_result[0]
@@ -254,7 +258,10 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                 for row in results["most_death_by"][:3]
             )
 
-        ratio_kd = round(((tot_kills - tot_teamkills) / (tot_deaths - tot_deaths_by_tk)), 2)
+        if tot_deaths - tot_deaths_by_tk == 0:
+            ratio_kd = (tot_kills - tot_teamkills)
+        else :
+            ratio_kd = round(((tot_kills - tot_teamkills) / (tot_deaths - tot_deaths_by_tk)), 2)
 
         message = (
             f"{player_name}\n"
