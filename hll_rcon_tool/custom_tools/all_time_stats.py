@@ -291,6 +291,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         )
 
         rcon.message_player(
+            player_name=player_name,
             player_id=player_id,
             message=message,
             by="custom_chatcommands",
