@@ -71,7 +71,7 @@ TRANSL = {
 
 def readable_duration(seconds: int) -> str:
     """
-    returns a human readable string (years, monthes, days, XXhXXmXXs)
+    returns a human readable string (X years, X monthes, X days, XXhXXmXXs)
     from a number of seconds
     """
     years, lessthanayearseconds = divmod(seconds, 31536000)
@@ -141,17 +141,22 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
     """
     get data from profile and database and return it in an ingame message
     """
+    # Ensure there's player_id and player_name in the CHAT log
     if not (player_id := struct_log["player_id_1"]) or \
        not (player_name := struct_log["player_name_1"]):
        logger.error("No player_id or player_name")
        return
 
     try:
+        # Ask for the player's profile data
         player_profile_data = get_player_profile(player_id=player_id, nb_sessions=0)
+
+        # Ensure we got profile data
         if player_profile_data is None:
             logger.error("No player_profile_data")
             return
 
+        # Set variables from profile data
         created = player_profile_data["created"]
         sessions_count = player_profile_data["sessions_count"]
         total_playtime_seconds = player_profile_data["total_playtime_seconds"]
@@ -161,6 +166,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
 
         elapsed_time_seconds = (datetime.now() - datetime.fromisoformat(str(created))).total_seconds()
 
+        # Build a string that shows the player's penalties
         penalties_message = ""
         if kicks == 0 and punishes == 0 and tempbans == 0:
             penalties_message += f"{TRANSL['nopunish'][LANG]}"
@@ -176,8 +182,10 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
                     penalties_message += ", "
                 penalties_message += f"{tempbans} tempbans"
 
+        # SQL query : get the player_id
         player_id_query = "SELECT s.id FROM steam_id_64 AS s WHERE s.steam_id_64 = :player_id"
 
+        # SQL queries for player stats
         queries = {
             "tot_games": "SELECT COUNT(*) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
             "avg_combat": "SELECT AVG(combat) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
@@ -219,20 +227,28 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             """
         }
 
+        # Opens a database session
         with enter_session() as sess:
+
+            # Get the player_id from the database
             db_player_result = sess.execute(text(player_id_query), {"player_id": player_id}).fetchone()
+
+            # Ensure there the data relative to player_id exists
             if not db_player_result:
                 logger.error(f"No db_player_id for {player_id}")
                 return
 
+            # Set db_player_id
             db_player_id = db_player_result[0]
             params = {"db_player_id": db_player_id}
 
+            # Get the different SQL queries results
             results = {}
             for key, query in queries.items():
                 result = sess.execute(text(query), params).fetchall()
                 results[key] = result
 
+            # Set variables from SQL queries results
             tot_games = int(results["tot_games"][0][0])
             avg_combat = round(float(results["avg_combat"][0][0]), 2)
             avg_offense = round(float(results["avg_offense"][0][0]), 2)
@@ -242,27 +258,26 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             tot_teamkills = int(results["tot_teamkills"][0][0])
             tot_deaths = int(results["tot_deaths"][0][0])
             tot_deaths_by_tk = int(results["tot_deaths_by_tk"][0][0])
-
             most_used_weapons = "\n".join(
                 f"{row[0]} ({row[1]} kills)"
                 for row in results["most_used_weapons"][:3]
             )
-
             most_killed = "\n".join(
                 f"{row[0]} : {row[1]} ({row[2]} games)"
                 for row in results["most_killed"][:3]
             )
-
             most_death_by = "\n".join(
                 f"{row[0]} : {row[1]} ({row[2]} games)"
                 for row in results["most_death_by"][:3]
             )
 
+        # Avoids a division by zero on ratio_kd
         if tot_deaths - tot_deaths_by_tk == 0:
             ratio_kd = (tot_kills - tot_teamkills)
         else :
             ratio_kd = round(((tot_kills - tot_teamkills) / (tot_deaths - tot_deaths_by_tk)), 2)
 
+        # Build the message
         message = (
             f"{player_name}\n"
             "\n"
@@ -297,6 +312,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             f"{most_death_by}"
         )
 
+        # Send the message
         rcon.message_player(
             player_name=player_name,
             player_id=player_id,
