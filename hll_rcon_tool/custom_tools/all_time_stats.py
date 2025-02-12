@@ -141,7 +141,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
     """
     get data from profile and database and return it in an ingame message
     """
-    # Ensure there's player_id and player_name in the CHAT log
+    # Ensure there's player_id and player_name in the CHAT or CONNECTED log
     if not (player_id := struct_log["player_id_1"]) or \
        not (player_name := struct_log["player_name_1"]):
        logger.error("No player_id or player_name")
