@@ -124,13 +124,15 @@ def format_hours_minutes_seconds(hours: int, minutes: int, seconds: int) -> str:
     """
     Formats the hours, minutes, and seconds as XXhXXmXXs.
     """
-    return f"{hours:02d}h{minutes:02d}m{seconds:02d}s"
+    return f"{int(hours):02d}h{int(minutes):02d}m{int(seconds):02d}s"
 
 def readable_duration(seconds: int) -> str:
     """
     Returns a human-readable string (years, months, days, XXhXXmXXs)
     from a number of seconds.
     """
+    seconds = int(seconds)
+
     years, remaining_seconds_in_year = divmod(seconds, SECONDS_IN_YEAR)
     months, remaining_seconds_in_month = divmod(remaining_seconds_in_year, SECONDS_IN_MONTH)
     days, remaining_seconds_in_day = divmod(remaining_seconds_in_month, SECONDS_IN_DAY)
@@ -204,11 +206,10 @@ def get_player_database_stats(player_id):
 def format_top_results(rows, limit, pattern):
     return "\n".join(pattern.format(*row) for row in rows[:limit])
 
-def generate_simplified_message(player_profile_data, database_stats):
+def generate_simplified_message(player_name, player_profile_data, database_stats):
     """
     Generates a simplified message for console servers.
     """
-    player_name = player_profile_data['player_name']
     total_playtime_seconds = player_profile_data["total_playtime_seconds"]
 
     tot_games = int(database_stats["tot_games"][0][0])
@@ -263,11 +264,10 @@ def get_penalties_message(player_profile_data):
 
     return penalties_message
 
-def generate_detailed_message(player_profile_data, database_stats):
+def generate_detailed_message(player_name, player_profile_data, database_stats):
     """
     Generates a detailed message with all available statistics.
     """
-    player_name = player_profile_data['player_name']
     created = player_profile_data['created']
     sessions_count = player_profile_data['sessions_count']
     total_playtime_seconds = player_profile_data["total_playtime_seconds"]
@@ -341,9 +341,9 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             return
 
         if DETAILED_DISPLAY:
-            message = generate_detailed_message(player_profile_data, database_stats)
+            message = generate_detailed_message(player_name, player_profile_data, database_stats)
         else:
-            message = generate_simplified_message(player_profile_data, database_stats)
+            message = generate_simplified_message(player_name, player_profile_data, database_stats)
 
         rcon.message_player(
             player_name=player_name,
@@ -354,7 +354,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         )
 
     except Exception as error:
-        logger.error(error)
+        logger.error(error, exc_info=True)
 
 def all_time_stats_on_connected(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
     """
@@ -373,5 +373,4 @@ def all_time_stats_on_chat_command(rcon: Rcon, struct_log: StructuredLogLineWith
     if chat_message in CHAT_COMMAND:
         all_time_stats(rcon, struct_log)
 
-# logger = logging.getLogger(__name__)
 logger = logging.getLogger('rcon')
