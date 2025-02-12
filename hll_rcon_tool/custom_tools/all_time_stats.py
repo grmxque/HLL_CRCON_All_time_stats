@@ -130,9 +130,12 @@ def all_time_stats_on_chat_command(rcon: Rcon, struct_log: StructuredLogLineWith
     """
     Call the message on chat command
     """
+    # Ensure there's a sub_content in the CHAT log
     if not (chat_message := struct_log["sub_content"]):
        logger.error("No sub_content in CHAT log")
        return
+
+    # Search for any CHAT_COMMAND in the chat message
     if chat_message in CHAT_COMMAND:
         all_time_stats(rcon, struct_log)
 
