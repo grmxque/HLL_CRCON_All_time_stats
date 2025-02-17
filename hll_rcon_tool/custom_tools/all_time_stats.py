@@ -49,11 +49,11 @@ TRANSL = {
 # (End of configuration)
 # -----------------------------------------------------------------------------
 QUERIES = {
-    "tot_games": "SELECT COUNT(*) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_kills": "SELECT SUM(kills) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_teamkills": "SELECT SUM(teamkills) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_deaths": "SELECT SUM(deaths) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_deaths_by_tk": "SELECT SUM(deaths_by_tk) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
+    "tot_games": "SELECT COALESCE(COUNT(*), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
+    "tot_kills": "SELECT COALESCE(SUM(kills), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
+    "tot_teamkills": "SELECT COALESCE(SUM(teamkills), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
+    "tot_deaths": "SELECT COALESCE(SUM(deaths), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
+    "tot_deaths_by_tk": "SELECT COALESCE(SUM(deaths_by_tk), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "most_killed": """
         SELECT key AS player_name, SUM(value::int) AS total_kills, count(*)
         FROM public.player_stats, jsonb_each_text(most_killed)
