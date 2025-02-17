@@ -174,7 +174,7 @@ def generate_message(player_name, player_profile_data, database_stats):
     most_killed = format_top_results(
         database_stats["most_killed"],
         3,
-        lambda victim_name, count, total: f"{victim_name} : ({count}x - {thousand_format(total)} {TRANSL['kills'][LANG]})"
+        lambda victim_name, count, total: f"{victim_name} ({count}x - {thousand_format(total)} {TRANSL['kills'][LANG]})"
     )
     most_death_by = format_top_results(
         database_stats["most_death_by"],
