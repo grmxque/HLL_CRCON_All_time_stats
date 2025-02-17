@@ -40,9 +40,9 @@ TRANSL = {
     "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
     "victims": ["victims", "VICTIMES"],
     "nemesis": ["nemesis", "ENEMIS JURÉS"],
-    "kills": ["kills", "ELIMINATIONS"],
-    "deaths": ["deaths", "MORTS"],
-    "ratio": ["ratio", "RATIO"],
+    "kills": ["kills", "K"],
+    "deaths": ["deaths", "D"],
+    "ratio": ["ratio", "KD"],
 }
 
 # (End of configuration)
@@ -50,11 +50,9 @@ TRANSL = {
 QUERIES = {
     "tot_games": "SELECT COALESCE(COUNT(*), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "tot_kills": "SELECT COALESCE(SUM(kills), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_teamkills": "SELECT COALESCE(SUM(teamkills), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "tot_deaths": "SELECT COALESCE(SUM(deaths), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
-    "tot_deaths_by_tk": "SELECT COALESCE(SUM(deaths_by_tk), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "most_killed": """
-        SELECT key AS player_name, SUM(value::int) AS total_kills, count(*)
+        SELECT key AS player_name, count(*), SUM(value::int) AS total_kills
         FROM public.player_stats, jsonb_each_text(most_killed)
         WHERE playersteamid_id = :db_player_id
         GROUP BY key
@@ -62,7 +60,7 @@ QUERIES = {
         LIMIT 3
     """,
     "most_death_by": """
-        SELECT key AS player_name, SUM(value::int) AS total_kills, count(*)
+        SELECT key AS player_name, count(*), SUM(value::int) AS total_kills
         FROM public.player_stats, jsonb_each_text(death_by)
         WHERE playersteamid_id = :db_player_id
         GROUP BY key
@@ -148,6 +146,22 @@ def get_player_database_stats(player_id):
 def format_top_results(rows, limit, pattern):
     return "\n".join(pattern.format(*row) for row in rows[:limit])
 
+def thousand_format(number):
+    """
+    Formats a number:
+    - Displays the value directly if it is less than 1000
+    - Converts to 'K' notation (thousands) with one decimal place otherwise
+
+    Examples:
+    format_milliers(999) -> "999"
+    format_milliers(1500) -> "1.5K"
+    format_milliers(2456) -> "2.4K"
+    """
+    if n < 1000:
+        return str(number)
+    else:
+        return f"{number / 1000:.1f}K"
+
 def generate_message(player_name, player_profile_data, database_stats):
     """
     Generates a simplified message for console servers.
@@ -156,19 +170,25 @@ def generate_message(player_name, player_profile_data, database_stats):
 
     tot_games = int(database_stats["tot_games"][0][0])
     tot_kills = int(database_stats["tot_kills"][0][0])
-    tot_teamkills = int(database_stats["tot_teamkills"][0][0])
     tot_deaths = int(database_stats["tot_deaths"][0][0])
-    most_killed = format_top_results(database_stats["most_killed"], 3, "{} : {:d} ({:d} games)")
-    most_death_by = format_top_results(database_stats["most_death_by"], 3, "{} : {:d} ({:d} games)")
-
-    ratio_kd = round(((tot_kills - tot_teamkills) / max(1, tot_deaths)), 2)
+    most_killed = format_top_results(
+        database_stats["most_killed"],
+        3,
+        lambda victim_name, count, total: f"{victim_name} : {count}x ({thousand_format(total)} {TRANSL['kills'][LANG]})"
+    )
+    most_death_by = format_top_results(
+        database_stats["most_death_by"],
+        3,
+        lambda killer_name, count, total: f"{killer_name} : {count}x ({thousand_format(total)} {TRANSL['deaths'][LANG]})"
+    )
+    ratio_kd = round((tot_kills / max(1, tot_deaths)), 2)
 
     message = (
         f"▒ {player_name} ▒\n"
         "\n"
         f"{TRANSL['playedgames'][LANG]} : {tot_games}\n"
         f"{TRANSL['cumulatedplaytime'][LANG]} : {readable_duration(total_playtime_seconds)}\n"
-        f"{ratio_kd} {TRANSL['ratio'][LANG]} ({tot_kills} {TRANSL['kills'][LANG]} / {tot_deaths} {TRANSL['deaths'][LANG]}) \n"
+        f"{ratio_kd} {TRANSL['ratio'][LANG]} ({thousand_format(tot_kills)} {TRANSL['kills'][LANG]} / {thousand_format(tot_deaths)} {TRANSL['deaths'][LANG]}) \n"
         "\n"
         f"{TRANSL['victims'][LANG]} :\n"
         f"{most_killed}\n"
