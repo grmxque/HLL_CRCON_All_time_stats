@@ -143,8 +143,8 @@ def get_player_database_stats(player_id):
         params = {"db_player_id": db_player_id}
         return execute_queries(sess, params)
 
-def format_top_results(rows, limit, pattern):
-    return "\n".join(pattern.format(*row) for row in rows[:limit])
+def format_top_results(rows, limit, formatter):
+    return "\n".join(formatter(*row) for row in rows[:limit])
 
 def thousand_format(number):
     """
