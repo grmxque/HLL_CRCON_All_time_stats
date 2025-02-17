@@ -26,24 +26,23 @@ from rcon.rcon import Rcon, StructuredLogLineWithMetaData
 ENABLED = True
 
 # Strings translations
-# Available : 0 for english, 1 for french, 2 for german, 3 for polish
+# Available : 0 for english, 1 for french
 LANG = 1
 
 # Translations
-# format is : "key": ["english", "french", "german", "polish"]
+# format is : "key": ["english", "french"]
 # ----------------------------------------------
 TRANSL = {
-    "years": ["years", "années", "Jahre", "Lata"],
-    "monthes": ["monthes", "mois", "Monate", "Miesiące"],
-    "days": ["days", "jours", "Tage", "Dni"],
-    "playedgames": ["played games", "parties jouées", "gespielte Spiele", "Rozegranych gier"],
-    "cumulatedplaytime": ["cumulated play time", "temps de jeu cumulé", "kumulierte Spielzeit", "Łączny czas gry"],
-    "favoriteweapons": ["favorite weapons", "armes favorites", "Lieblingswaffen", "Ulubione bronie"],
-    "victims": ["victims", "victimes", "Opfer", "Ofiary"],
-    "nemesis": ["nemesis", "nemesis", "Nemesis", "Nemesis"],
-    "kills": ["kills", "kills", "tötet", "zabójstwa"],
-    "deaths": ["deaths", "morts", "todesfälle", "śmierci"],
-    "ratio": ["ratio", "ratio", "verhältnis", "średnia"],
+    "years": ["years", "ANS"],
+    "monthes": ["monthes", "MOIS"],
+    "days": ["days", "JOURS"],
+    "playedgames": ["played games", "PARTIES JOUÉES"],
+    "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
+    "victims": ["victims", "VICTIMES"],
+    "nemesis": ["nemesis", "ENEMIS JURÉS"],
+    "kills": ["kills", "ELIMINATIONS"],
+    "deaths": ["deaths", "MORTS"],
+    "ratio": ["ratio", "RATIO"],
 }
 
 # (End of configuration)
