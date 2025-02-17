@@ -30,8 +30,7 @@ that displays statistic data about the player on connect.
   ```
   Second part
   ```shell
-  cd /root/hll_rcon_tool/custom_tools
-  wget https://raw.githubusercontent.com/grmxque/HLL_CRCON_All_time_stats/refs/heads/main/hll_rcon_tool/custom_tools/all_time_stats.py
+  wget https://raw.githubusercontent.com/grmxque/HLL_CRCON_All_time_stats/refs/heads/main/hll_rcon_tool/custom_tools/all_time_stats.py -O /root/hll_rcon_tool/custom_tools/all_time_stats.py
   ```
 - Edit `/root/hll_rcon_tool/rcon/hooks.py` and add these lines:
   - (in the import part, on top of the file)
