@@ -89,7 +89,7 @@ def readable_duration(seconds: int) -> str:
     months, remaining_seconds_in_month = divmod(remaining_seconds_in_year, 2592000)
     days, remaining_seconds_in_day = divmod(remaining_seconds_in_month, 86400)
     hours, remaining_seconds_in_hour = divmod(remaining_seconds_in_day, 3600)
-    remaining_seconds = divmod(remaining_seconds_in_hour, 60)
+    minutes, remaining_seconds = divmod(remaining_seconds_in_hour, 60)
 
     time_string = []
 
