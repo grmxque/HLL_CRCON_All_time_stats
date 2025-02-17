@@ -40,8 +40,8 @@ TRANSL = {
     "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
     "victims": ["victims", "VICTIMES"],
     "nemesis": ["nemesis", "ENEMIS JURÉS"],
-    "kills": ["kills", "K"],
-    "deaths": ["deaths", "D"],
+    "kills": ["kills", "KILLS"],
+    "deaths": ["deaths", "MORTS"],
     "ratio": ["ratio", "KD"],
 }
 
@@ -174,12 +174,12 @@ def generate_message(player_name, player_profile_data, database_stats):
     most_killed = format_top_results(
         database_stats["most_killed"],
         3,
-        lambda victim_name, count, total: f"{victim_name} : {count}x ({thousand_format(total)} {TRANSL['kills'][LANG]})"
+        lambda victim_name, count, total: f"{victim_name} : ({count}x - {thousand_format(total)} {TRANSL['kills'][LANG]})"
     )
     most_death_by = format_top_results(
         database_stats["most_death_by"],
         3,
-        lambda killer_name, count, total: f"{killer_name} : {count}x ({thousand_format(total)} {TRANSL['deaths'][LANG]})"
+        lambda killer_name, count, total: f"{killer_name} ({count}x - {thousand_format(total)} {TRANSL['deaths'][LANG]})"
     )
     ratio_kd = round((tot_kills / max(1, tot_deaths)), 2)
 
