@@ -157,7 +157,7 @@ def thousand_format(number):
     format_milliers(1500) -> "1.5K"
     format_milliers(2456) -> "2.4K"
     """
-    if n < 1000:
+    if number < 1000:
         return str(number)
     else:
         return f"{number / 1000:.1f}K"
