@@ -23,7 +23,7 @@ from rcon.rcon import Rcon, StructuredLogLineWithMetaData
 
 # Should we display the stats to every player on connect ?
 # True or False
-ENABLE = True
+ENABLED = True
 
 # Strings translations
 # Available : 0 for english, 1 for french, 2 for german, 3 for polish
@@ -214,7 +214,7 @@ def all_time_stats_on_connected(rcon: Rcon, struct_log: StructuredLogLineWithMet
     """
     Call the message on player's connection
     """
-    if ENABLE:
+    if ENABLED:
         all_time_stats(rcon, struct_log)
 
 logger = logging.getLogger('rcon')
