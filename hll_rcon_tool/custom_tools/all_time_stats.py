@@ -52,19 +52,33 @@ QUERIES = {
     "tot_kills": "SELECT COALESCE(SUM(kills), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "tot_deaths": "SELECT COALESCE(SUM(deaths), 0) FROM public.player_stats WHERE playersteamid_id = :db_player_id",
     "most_killed": """
-        SELECT key AS player_name, count(*), SUM(value::int) AS total_kills
-        FROM public.player_stats, jsonb_each_text(most_killed)
-        WHERE playersteamid_id = :db_player_id
-        GROUP BY key
-        ORDER BY total_kills DESC
+        SELECT
+        pn."name" AS player_name,
+        COUNT(ll.id::int) AS total_kills
+        FROM log_lines ll
+        JOIN player_names pn ON pn.playersteamid_id = ll.player2_steamid AND pn.id = (SELECT MAX(last_name.id) FROM player_names last_name WHERE last_name.playersteamid_id = ll.player2_steamid)
+        WHERE
+        ll.player1_steamid = :db_player_id
+        AND ll."type"='KILL'
+        GROUP BY
+        pn."name", ll.player2_steamid
+        ORDER BY
+        total_kills DESC
         LIMIT 3
     """,
     "most_death_by": """
-        SELECT key AS player_name, count(*), SUM(value::int) AS total_kills
-        FROM public.player_stats, jsonb_each_text(death_by)
-        WHERE playersteamid_id = :db_player_id
-        GROUP BY key
-        ORDER BY total_kills DESC
+        SELECT
+        pn."name" AS player_name,
+        COUNT(ll.id::int) AS total_kills
+        FROM log_lines ll
+        JOIN player_names pn ON pn.playersteamid_id = ll.player1_steamid AND pn.id = (SELECT MAX(last_name.id) FROM player_names last_name WHERE last_name.playersteamid_id = ll.player1_steamid)
+        WHERE
+        ll.player2_steamid = :db_player_id
+        AND ll."type"='KILL'
+        GROUP BY
+        pn."name", ll.player1_steamid
+        ORDER BY
+        total_kills DESC
         LIMIT 3
     """,
 }
@@ -177,12 +191,12 @@ def generate_message(player_name, player_profile_data, database_stats):
     most_killed = format_top_results(
         database_stats["most_killed"],
         3,
-        lambda victim_name, count, total: f"{victim_name} ({count}x - {thousand_format(total)} {TRANSL['kills'][LANG]})"
+        lambda victim_name, total: f"{victim_name} ({thousand_format(total)} {TRANSL['kills'][LANG]})"
     )
     most_death_by = format_top_results(
         database_stats["most_death_by"],
         3,
-        lambda killer_name, count, total: f"{killer_name} ({count}x - {thousand_format(total)} {TRANSL['deaths'][LANG]})"
+        lambda killer_name, total: f"{killer_name} ({thousand_format(total)} {TRANSL['deaths'][LANG]})"
     )
     ratio_kd = round((tot_kills / max(1, tot_deaths)), 2)
 
