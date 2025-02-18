@@ -71,9 +71,9 @@ QUERIES = {
 
 def format_hours_minutes_seconds(hours: int, minutes: int, seconds: int) -> str:
     """
-    Formats the hours, minutes, and seconds as XXHXXMXXS.
+    Formats the hours, minutes, and seconds as XXhXXmXXs.
     """
-    return f"{int(hours):02d}H{int(minutes):02d}M{int(seconds):02d}S"
+    return f"{int(hours):02d}h{int(minutes):02d}m{int(seconds):02d}s"
 
 def readable_duration(seconds: int) -> str:
     """
@@ -189,7 +189,7 @@ def generate_message(player_name, player_profile_data, database_stats):
     message = (
         f"▒ {player_name} ▒\n"
         "\n"
-        f"{TRANSL['playedgames'][LANG]} : {tot_games}\n"
+        f"{TRANSL['playedgames'][LANG]} : {thousand_format(tot_games)}\n"
         f"{TRANSL['cumulatedplaytime'][LANG]} : {readable_duration(total_playtime_seconds)}\n"
         f"{ratio_kd} {TRANSL['ratio'][LANG]} ({thousand_format(tot_kills)} {TRANSL['kills'][LANG]} / {thousand_format(tot_deaths)} {TRANSL['deaths'][LANG]}) \n"
         "\n"
