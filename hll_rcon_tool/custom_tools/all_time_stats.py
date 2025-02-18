@@ -73,7 +73,7 @@ def format_hours_minutes_seconds(hours: int, minutes: int, seconds: int) -> str:
     """
     Formats the hours, minutes, and seconds as XXhXXmXXs.
     """
-    return f"{int(hours):02d}h{int(minutes):02d}m{int(seconds):02d}s"
+    return f"{int(hours):02d}H{int(minutes):02d}M{int(seconds):02d}S"
 
 def readable_duration(seconds: int) -> str:
     """
