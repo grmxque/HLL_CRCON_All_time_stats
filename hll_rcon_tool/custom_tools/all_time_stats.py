@@ -33,9 +33,9 @@ LANG = 1
 # format is : "key": ["english", "french"]
 # ----------------------------------------------
 TRANSL = {
-    "years": ["years", "ANS"],
-    "monthes": ["monthes", "MOIS"],
-    "days": ["days", "JOURS"],
+    "years": ["years", "A"],
+    "monthes": ["monthes", "M"],
+    "days": ["days", "J"],
     "playedgames": ["played games", "PARTIES JOUÉES"],
     "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
     "victims": ["victims", "VICTIMES"],
@@ -71,7 +71,7 @@ QUERIES = {
 
 def format_hours_minutes_seconds(hours: int, minutes: int, seconds: int) -> str:
     """
-    Formats the hours, minutes, and seconds as XXhXXmXXs.
+    Formats the hours, minutes, and seconds as XXHXXMXXS.
     """
     return f"{int(hours):02d}H{int(minutes):02d}M{int(seconds):02d}S"
 
@@ -89,20 +89,20 @@ def readable_duration(seconds: int) -> str:
     minutes, remaining_seconds = divmod(remaining_seconds_in_hour, 60)
 
     time_string = []
+    show_next = False
 
     if years > 0:
-        time_string.append(f"{years} {TRANSL['years'][LANG]}")
-    if months > 0:
-        time_string.append(f"{months} {TRANSL['months'][LANG]}")
-    if days > 0:
-        time_string.append(f"{days} {TRANSL['days'][LANG]}")
-
-    if any([years, months, days]):
-        time_string.append(",")
+        time_string.append(f"{years}{TRANSL['years'][LANG]}")
+        show_next = True
+    if months > 0 or show_next:
+        time_string.append(f"{months}{TRANSL['months'][LANG]}")
+        show_next = True
+    if days > 0 or show_next:
+        time_string.append(f"{days}{TRANSL['days'][LANG]}")
 
     time_string.append(format_hours_minutes_seconds(hours, minutes, remaining_seconds))
 
-    return " ".join(filter(None, time_string))
+    return " ".join(time_string)
 
 def get_player_profile_data(player_id):
     """
