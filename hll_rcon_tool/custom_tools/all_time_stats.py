@@ -167,8 +167,11 @@ def generate_message(player_name, player_profile_data, database_stats):
     Generates a simplified message for console servers.
     """
     total_playtime_seconds = player_profile_data["total_playtime_seconds"]
-
     tot_games = int(database_stats["tot_games"][0][0])
+
+    if tot_games == 0:
+        return None
+
     tot_kills = int(database_stats["tot_kills"][0][0])
     tot_deaths = int(database_stats["tot_deaths"][0][0])
     most_killed = format_top_results(
@@ -217,6 +220,8 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
             return
 
         message = generate_message(player_name, player_profile_data, database_stats)
+        if message is None:
+            return
 
         rcon.message_player(
             player_name=player_name,
