@@ -205,7 +205,6 @@ def is_unlimited_vip(vip_expiration):
             return vip_expiration == datetime.fromisoformat(unlimited_date)
         except ValueError:
             return False
-
     return False
 
 def format_vip_date(date_input):
@@ -216,7 +215,6 @@ def format_vip_date(date_input):
         date = date_input
     elif isinstance(date_input, str):
         date = datetime.fromisoformat(date_input)
-
     return date.strftime("%d/%m/%Y %H:%M")
 
 def get_vip_message(vip):
