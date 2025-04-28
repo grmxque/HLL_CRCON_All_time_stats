@@ -43,6 +43,7 @@ TRANSL = {
     "kills": ["kills", "KILLS"],
     "deaths": ["deaths", "MORTS"],
     "ratio": ["ratio", "KD"],
+    "no_vip": ["NOT VIP", "NON VIP"],
     "unlimited_vip": ["unlimited VIP", "VIP ILLIMITÉ"],
     "until": ["until", "JUSQU'AU"]
 }
@@ -221,6 +222,8 @@ def get_vip_message(vip):
     """
     Get VIP message/
     """
+    if not vip:
+        return f"{TRANSL['no_vip'][LANG]}\n"
     if is_unlimited_vip(vip['vip_expiration']):
         return f"{TRANSL['unlimited_vip'][LANG]}\n"
     else:
@@ -253,8 +256,7 @@ def generate_message(player_id, player_name, player_profile_data, database_stats
     vip = get_vip(player_id, vip_list)
 
     message = f"▒ {player_name} ▒\n"
-    if vip:
-        message += get_vip_message(vip)
+    message += get_vip_message(vip)
     message += "\n"
     message += f"{TRANSL['playedgames'][LANG]} : {thousand_format(tot_games)}\n"
     message += f"{TRANSL['cumulatedplaytime'][LANG]} : {readable_duration(total_playtime_seconds)}\n"
