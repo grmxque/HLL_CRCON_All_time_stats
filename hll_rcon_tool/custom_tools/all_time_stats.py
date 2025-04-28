@@ -34,7 +34,7 @@ LANG = 1
 # ----------------------------------------------
 TRANSL = {
     "years": ["years", "A"],
-    "monthes": ["monthes", "M"],
+    "months": ["months", "M"],
     "days": ["days", "J"],
     "playedgames": ["played games", "PARTIES JOUÉES"],
     "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
@@ -43,6 +43,8 @@ TRANSL = {
     "kills": ["kills", "KILLS"],
     "deaths": ["deaths", "MORTS"],
     "ratio": ["ratio", "KD"],
+    "unlimited_vip": ["unlimited VIP", "VIP ILLIMITÉ"],
+    "until": ["until", "JUSQU'AU"]
 }
 
 # (End of configuration)
@@ -176,7 +178,40 @@ def thousand_format(number):
     else:
         return f"{number / 1000:.1f}K"
 
-def generate_message(player_name, player_profile_data, database_stats):
+def get_vip(player_id, vip_list):
+    """
+    Return vip object if founded, false if not.
+    """
+    if not vip_list or not player_id:
+        return False
+    for vip in vip_list:
+        if vip['player_id'] == player_id:
+            return vip
+    return False
+
+def is_unlimited_vip(vip_expiration):
+    """
+    Check if unlimited VIP.
+    """
+    return (vip_expiration is None or vip_expiration == "3000-01-01T00:00:00+00:00")
+
+def format_vip_date(date_str):
+    """
+    Format VIP date.
+    """
+    date = datetime.fromisoformat(date_str)
+    return date.strftime("%d/%m/%Y %H:%M")
+
+def get_vip_message(vip):
+    """
+    Get VIP message/
+    """
+    if is_unlimited_vip(vip['vip_expiration']):
+        return f"{TRANSL['unlimited_vip'][LANG]}\n"
+    else:
+        return f"VIP {TRANSL['until'][LANG]} {format_vip_date(vip['vip_expiration'])}\n"
+
+def generate_message(player_id, player_name, player_profile_data, database_stats, vip_list):
     """
     Generates a simplified message for console servers.
     """
@@ -200,19 +235,21 @@ def generate_message(player_name, player_profile_data, database_stats):
     )
     ratio_kd = round((tot_kills / max(1, tot_deaths)), 2)
 
-    message = (
-        f"▒ {player_name} ▒\n"
-        "\n"
-        f"{TRANSL['playedgames'][LANG]} : {thousand_format(tot_games)}\n"
-        f"{TRANSL['cumulatedplaytime'][LANG]} : {readable_duration(total_playtime_seconds)}\n"
-        f"{ratio_kd} {TRANSL['ratio'][LANG]} ({thousand_format(tot_kills)} {TRANSL['kills'][LANG]} / {thousand_format(tot_deaths)} {TRANSL['deaths'][LANG]}) \n"
-        "\n"
-        f"{TRANSL['victims'][LANG]} :\n"
-        f"{most_killed}\n"
-        "\n"
-        f"{TRANSL['nemesis'][LANG]} :\n"
-        f"{most_death_by}\n"
-    )
+    vip = get_vip(player_id, vip_list)
+
+    message = f"▒ {player_name} ▒\n"
+    if vip:
+        message += get_vip_message(vip)
+    message += "\n"
+    message += f"{TRANSL['playedgames'][LANG]} : {thousand_format(tot_games)}\n"
+    message += f"{TRANSL['cumulatedplaytime'][LANG]} : {readable_duration(total_playtime_seconds)}\n"
+    message += f"{ratio_kd} {TRANSL['ratio'][LANG]} ({thousand_format(tot_kills)} {TRANSL['kills'][LANG]} / {thousand_format(tot_deaths)} {TRANSL['deaths'][LANG]}) \n"
+    message += "\n"
+    message += f"{TRANSL['victims'][LANG]} :\n"
+    message += f"{most_killed}\n"
+    message += "\n"
+    message += f"{TRANSL['nemesis'][LANG]} :\n"
+    message += f"{most_death_by}\n"
 
     return message
 
@@ -225,6 +262,8 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         return
 
     try:
+        vip_list = rcon.get_vip_ids()
+
         player_profile_data = get_player_profile_data(player_id)
         if player_profile_data is None:
             return
@@ -233,7 +272,7 @@ def all_time_stats(rcon: Rcon, struct_log: StructuredLogLineWithMetaData):
         if database_stats is None:
             return
 
-        message = generate_message(player_name, player_profile_data, database_stats)
+        message = generate_message(player_id, player_name, player_profile_data, database_stats, vip_list)
         if message is None:
             return
 
