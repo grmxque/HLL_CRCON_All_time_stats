@@ -195,11 +195,15 @@ def is_unlimited_vip(vip_expiration):
     """
     return (vip_expiration is None or vip_expiration == "3000-01-01T00:00:00+00:00")
 
-def format_vip_date(date_str):
+def format_vip_date(date_input):
     """
     Format VIP date.
     """
-    date = datetime.fromisoformat(date_str)
+    if isinstance(date_input, datetime):
+        date = date_input
+    elif isinstance(date_input, str):
+        date = datetime.fromisoformat(date_input)
+
     return date.strftime("%d/%m/%Y %H:%M")
 
 def get_vip_message(vip):
