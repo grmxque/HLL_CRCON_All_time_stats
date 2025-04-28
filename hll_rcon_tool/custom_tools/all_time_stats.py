@@ -193,7 +193,20 @@ def is_unlimited_vip(vip_expiration):
     """
     Check if unlimited VIP.
     """
-    return (vip_expiration is None or vip_expiration == "3000-01-01T00:00:00+00:00")
+    if vip_expiration is None:
+        return True
+
+    unlimited_date = "3000-01-01T00:00:00+00:00"
+
+    if isinstance(vip_expiration, str):
+        return vip_expiration == unlimited_date
+    elif isinstance(vip_expiration, datetime):
+        try:
+            return vip_expiration == datetime.fromisoformat(unlimited_date)
+        except ValueError:
+            return False
+
+    return False
 
 def format_vip_date(date_input):
     """
