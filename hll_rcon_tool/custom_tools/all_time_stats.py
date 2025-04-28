@@ -39,7 +39,7 @@ TRANSL = {
     "playedgames": ["played games", "PARTIES JOUÉES"],
     "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
     "victims": ["victims", "VICTIMES"],
-    "nemesis": ["nemesis", "ENEMIS JURÉS"],
+    "nemesis": ["nemesis", "ENNEMIS JURÉS"],
     "kills": ["kills", "KILLS"],
     "deaths": ["deaths", "MORTS"],
     "ratio": ["ratio", "KD"],
