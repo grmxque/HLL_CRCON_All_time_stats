@@ -27,25 +27,25 @@ ENABLED = True
 
 # Strings translations
 # Available : 0 for english, 1 for french
-LANG = 1
+LANG = 0
 
 # Translations
 # format is : "key": ["english", "french"]
 # ----------------------------------------------
 TRANSL = {
-    "years": ["years", "A"],
-    "months": ["months", "M"],
-    "days": ["days", "J"],
-    "playedgames": ["played games", "PARTIES JOUÉES"],
-    "cumulatedplaytime": ["cumulated play time", "TEMPS DE JEU"],
-    "victims": ["victims", "VICTIMES"],
-    "nemesis": ["nemesis", "ENNEMIS JURÉS"],
-    "kills": ["kills", "KILLS"],
-    "deaths": ["deaths", "MORTS"],
-    "ratio": ["ratio", "KD"],
+    "years": ["Y", "A"],
+    "months": ["M", "M"],
+    "days": ["D", "J"],
+    "playedgames": ["PLAYED GAMES", "PARTIES JOUÉES"],
+    "cumulatedplaytime": ["PLAY TIME", "TEMPS DE JEU"],
+    "victims": ["VICTIMS", "VICTIMES"],
+    "nemesis": ["NEMESIS", "ENNEMIS JURÉS"],
+    "kills": ["KILLS", "KILLS"],
+    "deaths": ["DEATHS", "MORTS"],
+    "ratio": ["KD", "KD"],
     "no_vip": ["NOT VIP", "NON VIP"],
-    "unlimited_vip": ["unlimited VIP", "VIP ILLIMITÉ"],
-    "until": ["until", "JUSQU'AU"]
+    "unlimited_vip": ["UNLIMITED VIP", "VIP ILLIMITÉ"],
+    "until": ["UNTIL", "JUSQU'AU"]
 }
 
 # (End of configuration)
